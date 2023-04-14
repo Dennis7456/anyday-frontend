@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useUserContext } from "../../userContext";
 import { Link } from "react-router-dom";
 import LoginModal from "../LoginModal/LoginModal";
+import "./NavigationBar.css";
 
 const token = localStorage.getItem("token");
 

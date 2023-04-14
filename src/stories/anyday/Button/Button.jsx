@@ -1,22 +1,30 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-/**
- * Primary UI component for user interaction
- */
-export const Button = ({ primary, backgroundColor, size, label, ...props }) => {
+export const Button = ({
+  primary,
+  backgroundColor,
+  size,
+  label,
+  flat,
+  ...props
+}) => {
   const mode = primary
-    ? "bg-blue-500 text-white rounded-full border border-black border-2 py-2 px-3"
-    : "bg-gray-500 text-black";
+    ? "bg-primary border border-black border-2 px-3 py-2 rounded-full font-semibold text-on-primary hover:bg-primary hover:text-on-primary active:bg-tertiary-container"
+    : "border border-black border-2 px-3 py-2 rounded-full font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container";
+
+  const style = flat ? "px-8 py-1" : "";
+
   const sizeClasses = {
     small: "text-xs",
     medium: "text-sm",
-    large: "text-lg",
+    karge: "text-lg",
   };
+
   return (
     <button
       type="button"
-      className={`px-4 py-2 rounded-md ${mode} ${sizeClasses[size]}`}
+      className={`${mode} ${sizeClasses[size]} ${style}`}
       style={backgroundColor && { backgroundColor }}
       {...props}
     >
@@ -26,31 +34,18 @@ export const Button = ({ primary, backgroundColor, size, label, ...props }) => {
 };
 
 Button.propTypes = {
-  /**
-   * Is this the principal call to action on the page?
-   */
   primary: PropTypes.bool,
-  /**
-   * What background color to use
-   */
   backgroundColor: PropTypes.string,
-  /**
-   * How large should the button be?
-   */
   size: PropTypes.oneOf(["small", "medium", "large"]),
-  /**
-   * Button contents
-   */
   label: PropTypes.string.isRequired,
-  /**
-   * Optional click handler
-   */
-  onClick: PropTypes.func,
+  flat: PropTypes.bool,
+  onclick: PropTypes.func,
 };
 
 Button.defaultProps = {
   backgroundColor: null,
   primary: false,
   size: "medium",
+  flat: false,
   onClick: undefined,
 };

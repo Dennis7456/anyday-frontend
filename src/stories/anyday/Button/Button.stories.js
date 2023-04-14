@@ -37,3 +37,18 @@ export const Small = {
     label: "Button",
   },
 };
+
+export const MyAccount = {
+  args: {
+    size: "large",
+    label: "My Account",
+  },
+};
+
+export const Login = {
+  args: {
+    size: "large",
+    label: "Login",
+    flat: true,
+  },
+};
