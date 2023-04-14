@@ -25,4 +25,4 @@ jobs:
       - run: yarn prettier
       - run: yarn lint:fix
       - name: Build
-        run: npm run build # Update with your build command
+        run: yarn build # Update with your build command

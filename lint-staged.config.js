@@ -1,6 +1,6 @@
 module.exports = {
   "*.{js,jsx}": () => [
-    "yarn run format:fix",
-    "yarn run validate",
+    "yarn prettier",
+    "yarn lint:fix",
   ],
 };
