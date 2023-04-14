@@ -18,6 +18,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "storybook": "concurrently 'yarn:watch:*'",
+    "watch:tailwind": "npx tailwindcss -i ./src/tailwind-input.css -o ./dist/tailwind-output.css --watch",
+    "watch:storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -26,9 +30,7 @@
     "lint": "eslint . --ignore-path .gitignore",
     "lint:fix": "eslint . --fix",
     "validate": "run-p lint prettier lint lint:fix",
-    "prepare": "husky install",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "prepare": "husky install"
   },
   "eslintConfig": {
     "extends": [
@@ -62,6 +64,8 @@
     "@storybook/addon-essentials": "^7.0.4",
     "@storybook/addon-interactions": "^7.0.4",
     "@storybook/addon-links": "^7.0.4",
+    "@storybook/addon-postcss": "^2.0.0",
+    "@storybook/addon-styling": "^1.0.0",
     "@storybook/blocks": "^7.0.4",
     "@storybook/preset-create-react-app": "^7.0.4",
     "@storybook/react": "^7.0.4",
@@ -69,12 +73,14 @@
     "@storybook/testing-library": "^0.0.14-next.2",
     "autoprefixer": "^10.4.14",
     "babel-plugin-named-exports-order": "^0.0.2",
+    "concurrently": "^8.0.1",
     "eslint": "^8.38.0",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-storybook": "^0.6.11",
     "husky": ">=6",
     "lint-staged": ">=10",
     "postcss": "^8.4.21",
+    "postcss-loader": "^7.2.4",
     "prettier": "^2.8.7",
     "prop-types": "^15.8.1",
     "storybook": "^7.0.4",

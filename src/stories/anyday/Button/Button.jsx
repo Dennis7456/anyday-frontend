@@ -5,7 +5,9 @@ import PropTypes from "prop-types";
  * Primary UI component for user interaction
  */
 export const Button = ({ primary, backgroundColor, size, label, ...props }) => {
-  const mode = primary ? "bg-blue-500 text-white" : "bg-gray-500 text-black";
+  const mode = primary
+    ? "bg-blue-500 text-white rounded-full border border-black border-2 py-2 px-3"
+    : "bg-gray-500 text-black";
   const sizeClasses = {
     small: "text-xs",
     medium: "text-sm",
