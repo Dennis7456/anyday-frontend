@@ -1,8 +1,5 @@
 const TopWriters = () => {
-    return(
-        <>
-        Top Writers Page
-        </>)
+  return <>Top Writers Page</>
 }
 
-export default TopWriters;
+export default TopWriters

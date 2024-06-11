@@ -1,12 +1,11 @@
-import Toast from "./Toast";
-import { useToastStateContext } from "./ToastContext";
+import Toast from './Toast'
+import { useToastStateContext } from './ToastContext'
 
-export default function ToastContainer () {
+export default function ToastContainer() {
+  const { toasts } = useToastStateContext()
 
-    const { toasts } = useToastStateContext();
-
-    return (
-        <div className="absolute bottom-10 w-full z-50">
+  return (
+    <div className="absolute bottom-10 w-full z-50">
       <div className="max-w-xl mx-auto">
         {toasts &&
           toasts.map((toast) => (
@@ -19,5 +18,5 @@ export default function ToastContainer () {
           ))}
       </div>
     </div>
-    );
+  )
 }
