@@ -14,6 +14,9 @@ import LatestReviews from './pages/LatestReviews/LatestReviews'
 import HowItWorks from './pages/HowItWorks/HowItWorks'
 import NavigationBar from './pages/Navigation/NavigationBar'
 import httpClient from './config/httpClient'
+import {ToastContainer, toast} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 
 interface UserInterface {
   id: string,
@@ -47,12 +50,13 @@ const App = () => {
                 <link rel="canonical" href="http://mysite.com/example" />
                 <meta name="description" content="Professional academic writing services" />
       </Helmet>
-      {user !== null ? null : (<section className='px-6 py-8 bg-surface'><NavigationBar /></section>)}
+      {user !== null ? null : (<section className='px-6 py-2 bg-surface'><NavigationBar /></section>)}
       {/*<section className='px-6 py-8 bg-surface'>
         <NavigationBar /> 
       </section>*/}
   
       <UserContext.Provider value={user}>
+        <ToastContainer/>
       <Routes>
         <Route path='/' element={
           <section className='bg-gradient-to-r to-primary from-secondary-container flex justify-around items-center p-10 h-50'>
