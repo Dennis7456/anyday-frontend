@@ -73,7 +73,7 @@ const Order = () => {
             Type of paper
           </label>
           <div>
-            <div class="flex justify-start">
+            <div className="flex justify-start">
               <div className="mb-3">
                 <select
                   className="form-select shadow text-secondary focus:border-1
