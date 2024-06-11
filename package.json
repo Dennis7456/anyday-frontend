@@ -17,6 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet": "^6.1.0",
+    "react-refresh": "^0.14.2",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.1",
     "react-toastify": "^10.0.5",
@@ -92,5 +93,8 @@
   "lint-staged": {
     "*.{tsx,ts}": "eslint --cache --fix",
     "*.{js,css,md}": "prettier --write"
+  },
+  "overrides": {
+    "react-refresh": "^0.14.2"
   }
 }
