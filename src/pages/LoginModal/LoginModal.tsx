@@ -1,46 +1,36 @@
 import Icon from '@mdi/react'
-import { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import axios from 'axios'
 import { Navigate } from 'react-router-dom'
 import { mdiCloseCircle, mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js'
 import './LoginModal.css'
-import Toast from '../Toast/Toast'
+// import Toast from '../Toast/Toast'
 import httpClient from '../../config/httpClient'
-const LoginModal = () => {
-  const [showModal, setShowModal] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loggedin, setLoggedin] = useState(false)
 
-  const handleClick = (e) => {
+// Define the shape of your state
+interface LoginModalState {
+  showModal: boolean
+  showPassword: boolean
+  email: string
+  password: string
+  loggedin: boolean
+}
+
+const LoginModal: React.FC = () => {
+  const [showModal, setShowModal] =
+    useState<LoginModalState['showModal']>(false)
+  const [showPassword, setShowPassword] =
+    useState<LoginModalState['showPassword']>(false)
+  const [email, setEmail] = useState<LoginModalState['email']>('')
+  const [password, setPassword] = useState<LoginModalState['password']>('')
+  const [loggedin, setLoggedin] = useState<LoginModalState['loggedin']>(false)
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    if (showPassword) {
-      setShowPassword(false)
-    } else {
-      setShowPassword(true)
-    }
+    setShowPassword(!showPassword)
   }
 
-  //   const loginUser = async (e) => {
-  //   console.log(email, password);
-
-  //   try {
-  //     const resp = await httpClient.post("//localhost:5000/login", {
-  //       email,
-  //       password,
-  //     });
-  //     // console.log((await resp))
-  //     window.location.href = "/dashboard";
-  //   } catch (error) {
-  //     // if (error.response.status === 401) {
-  //     //   alert("Invalid credentials");
-  //     // }
-  //   }
-  //   e.preventDefault();
-  // };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     try {
       const resp = await httpClient.post('//localhost:5000/login', {
@@ -49,7 +39,11 @@ const LoginModal = () => {
       })
       window.location.href = '/dashboard'
     } catch (error) {
-      if (error.response.status === 401) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response &&
+        error.response.status === 401
+      ) {
         alert('Invalid credentials')
       }
     }
@@ -64,16 +58,16 @@ const LoginModal = () => {
       >
         My Account
       </button>
-      {showModal ? (
+      {showModal && (
         <>
           {/* modal */}
           <div className="modal-bg">
-            <Toast />
+            {/* <Toast /> */}
             <div className=" opacity-100 justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
               {' '}
               <div className="rounded relative w-full my-6 mx-auto max-w-xs">
                 {/*content*/}
-                <form>
+                <form onSubmit={handleSubmit}>
                   <div className="border-0 rounded shadow-lg relative flex flex-col w-full bg-on-primary outline-none focus:outline-none">
                     {/*header*/}
                     <div className="flex items-center justify-center p-5 border-solid border-slate-200 rounded-t">
@@ -85,7 +79,7 @@ const LoginModal = () => {
                         className="p-1 ml-auto bg-transparent border-0 opacity-60 text-error float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
                         onClick={() => setShowModal(false)}
                       >
-                        <Icon path={mdiCloseCircle} size={1}></Icon>
+                        <Icon path={mdiCloseCircle} size={1} />
                       </button>
                     </div>
                     {/*body*/}
@@ -101,63 +95,47 @@ const LoginModal = () => {
                           placeholder="Email"
                           name="email"
                           onChange={(e) => setEmail(e.target.value)}
-                        ></input>
+                          value={email}
+                        />
                       </div>
                       <label className=" pt-5 pb-2 text-start block text-on-background text-sm font-light">
                         Password
                       </label>
                       <span className="flex justify-end items-center">
-                        {showPassword ? (
-                          <input
-                            className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-full py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-                            id="email"
-                            type="text"
-                            placeholder="Password"
-                            name="password"
-                            onChange={(e) => setPassword(e.target.value)}
-                          ></input>
-                        ) : (
-                          <input
-                            className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-full py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-                            id="email"
-                            type="password"
-                            placeholder="Password"
-                            name="password"
-                            onChange={(e) => setPassword(e.target.value)}
-                          ></input>
-                        )}
+                        <input
+                          className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-full py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Password"
+                          name="password"
+                          onChange={(e) => setPassword(e.target.value)}
+                          value={password}
+                        />
                         <button
+                          type="button"
                           className="absolute mr-4 hover:text-info"
                           onClick={handleClick}
                         >
-                          {showPassword ? (
-                            <Icon
-                              path={mdiEyeOutline}
-                              size={1}
-                              className=""
-                            ></Icon>
-                          ) : (
-                            <Icon
-                              path={mdiEyeOffOutline}
-                              size={1}
-                              className=""
-                            ></Icon>
-                          )}
+                          <Icon
+                            path={
+                              showPassword ? mdiEyeOutline : mdiEyeOffOutline
+                            }
+                            size={1}
+                          />
                         </button>
                       </span>
                     </div>
-                    {loggedin ? (
+                    {loggedin && (
                       <p className="text-success">
                         You are logged in successfully
                       </p>
-                    ) : null}
+                    )}
                     {/*footer*/}
                     <div className="flex justify-center items-center border-solid border-slate-200 rounded-b">
                       <div className="flex justify-center items-center h-20">
                         <button
                           className="borderborder-black border-2 px-10 py-1 rounded-full font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container"
                           type="submit"
-                          onClick={handleSubmit}
                         >
                           Login
                         </button>
@@ -194,7 +172,7 @@ const LoginModal = () => {
           </div>
           <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
         </>
-      ) : null}
+      )}
     </>
   )
 }
