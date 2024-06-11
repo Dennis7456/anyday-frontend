@@ -1,8 +1,5 @@
 const HowItWorks = () => {
-    return(
-        <>
-        How It Works Page
-        </>);
+  return <>How It Works Page</>
 }
 
-export default HowItWorks;
+export default HowItWorks

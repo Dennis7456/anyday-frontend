@@ -1,9 +1,5 @@
 const Samples = () => {
-    return (
-        <>
-        Samples Pages
-        </>
-    )
+  return <>Samples Pages</>
 }
 
-export default Samples;
+export default Samples

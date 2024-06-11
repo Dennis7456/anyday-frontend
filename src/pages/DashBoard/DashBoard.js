@@ -1,24 +1,22 @@
-import { useCallback, useContext } from 'react';
+import { useCallback, useContext } from 'react'
 // import { AuthContext } from '../../App';
 //import Cookies from 'universal-cookie';
-import Example from '../Example/Example';
+import Example from '../Example/Example'
 import { UserContext } from '../../App'
 // import { User } from '../../types'
 import httpClient from '../../config/httpClient'
 
-
-
 const DashBoard = () => {
-    const user = useContext(UserContext);
-    console.log(user)
+  const user = useContext(UserContext)
+  console.log(user)
 
-const logoutUser = async () => {
-    await httpClient.post("//localhost:5000/logout");
-    window.location.href = "/";
-  };
+  const logoutUser = async () => {
+    await httpClient.post('//localhost:5000/logout')
+    window.location.href = '/'
+  }
 
-    return (
-        <div>
+  return (
+    <div>
       {user != null ? (
         <div>
           <Example />
@@ -37,7 +35,7 @@ const logoutUser = async () => {
         </div>
       )}
     </div>
-    )
+  )
 }
 
-export default DashBoard;
+export default DashBoard
