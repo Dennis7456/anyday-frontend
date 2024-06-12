@@ -1,51 +1,87 @@
 import Icon from '@mdi/react'
-import React, { useState } from 'react'
+import React, { useState, useContext, FormEvent } from 'react'
+import { useMutation, gql, ApolloError } from '@apollo/client'
 import axios from 'axios'
 import { Navigate } from 'react-router-dom'
 import { mdiCloseCircle, mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js'
 import './LoginModal.css'
 // import Toast from '../Toast/Toast'
 import httpClient from '../../config/httpClient'
+import { useUserContext } from 'src/userContext'
+import UserContext from 'src/userContext'
 
-// Define the shape of your state
-interface LoginModalState {
-  showModal: boolean
-  showPassword: boolean
-  email: string
-  password: string
-  loggedin: boolean
+interface LoginProps {
+  onSubmit: (data: FormData) => void
 }
 
+const LOGIN_MUTATION = gql`
+  mutation login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      user {
+        id
+        firstName
+        lastName
+        userName
+        email
+        dateOfBirth
+      }
+    }
+  }
+`
+
 const LoginModal: React.FC = () => {
-  const [showModal, setShowModal] =
-    useState<LoginModalState['showModal']>(false)
-  const [showPassword, setShowPassword] =
-    useState<LoginModalState['showPassword']>(false)
-  const [email, setEmail] = useState<LoginModalState['email']>('')
-  const [password, setPassword] = useState<LoginModalState['password']>('')
-  const [loggedin, setLoggedin] = useState<LoginModalState['loggedin']>(false)
+  // const { value } = useContext(UserContext);
+  const { value } = useUserContext()
+  const { loginState } = value
+  const [showModal, setShowModal] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loggedin, setLoggedin] = useState(false)
+
+  // Use the useMutation hook to handle the login mutation
+  const [login, { data, loading, error }] = useMutation(LOGIN_MUTATION, {
+    onCompleted: (data) => {
+      // Handle successful login
+      const { login } = data
+      loginState(login.token, login.user)
+      console.log(login.token, login.user)
+    },
+
+    onError: (error) => {
+      // Handle login error
+      console.error(error.message)
+      // if (error. response.status === 401) {
+      //   alert("Invalid credentials");
+      // }
+    },
+  })
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    setShowPassword(!showPassword)
+    if (showPassword) {
+      setShowPassword(false)
+    } else {
+      setShowPassword(true)
+    }
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     try {
-      const resp = await httpClient.post('//localhost:5000/login', {
-        email,
-        password,
+      await login({
+        variables: {
+          email,
+          password,
+        },
       })
       window.location.href = '/dashboard'
     } catch (error) {
-      if (
-        axios.isAxiosError(error) &&
-        error.response &&
-        error.response.status === 401
-      ) {
-        alert('Invalid credentials')
-      }
+      const apolloError = error as ApolloError
+      console.error('Unexpected error:', apolloError.message)
+      console.log(apolloError.graphQLErrors)
     }
   }
 
@@ -67,7 +103,7 @@ const LoginModal: React.FC = () => {
               {' '}
               <div className="rounded relative w-full my-6 mx-auto max-w-xs">
                 {/*content*/}
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleLogin}>
                   <div className="border-0 rounded shadow-lg relative flex flex-col w-full bg-on-primary outline-none focus:outline-none">
                     {/*header*/}
                     <div className="flex items-center justify-center p-5 border-solid border-slate-200 rounded-t">

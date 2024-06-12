@@ -1,23 +1,26 @@
-import { useEffect, useState } from 'react'
-import Select from 'react-select'
+import React, { useEffect, useState } from 'react'
+import Select, { StylesConfig, SingleValue } from 'react-select'
 import './Order.css'
 import Icon from '@mdi/react'
-import {
-  mdiPlus,
-  mdiMinus,
-  mdiAlertCircleOutline,
-  mdiChevronDown,
-  mdiCalendarClock,
-} from '@mdi/js'
+import { mdiPlus, mdiMinus } from '@mdi/js'
 import { toast } from 'react-toastify'
 
-const Order = () => {
-  let [numberOfPages, setNumberOfPages] = useState(1)
-  let [warning, setWarning] = useState('')
-  let [words, setWords] = useState(275)
-  let [selectedPaperType, setSelectedPaperType] = useState(null)
+// Define the type for paper options
+interface PaperOption {
+  value: string
+  label: string
+}
 
-  const paperOptions = [
+// Define the type for the select's value
+type PaperType = PaperOption | null
+
+const Order = () => {
+  const [numberOfPages, setNumberOfPages] = useState(1)
+  const [warning, setWarning] = useState('')
+  const [words, setWords] = useState(275)
+  const [selectedPaperType, setSelectedPaperType] = useState<PaperType>(null)
+
+  const paperOptions: PaperOption[] = [
     { value: 'essay', label: 'Essay (any type)' },
     { value: 'admission_essay', label: 'Admission essay' },
     { value: 'annotated_bibliography', label: 'Annotated bibliography' },
@@ -50,8 +53,7 @@ const Order = () => {
       }, 3000)
     } else {
       setWarning('')
-      words = numberOfPages * 275
-      setWords(words)
+      setWords(numberOfPages * 275)
     }
   }, [numberOfPages])
 
@@ -65,10 +67,46 @@ const Order = () => {
     }
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     console.log('form submitted')
     console.log('Selected Paper Type:', selectedPaperType)
+  }
+
+  // Custom styles for react-select
+  const customStyles: StylesConfig<PaperOption, false> = {
+    control: (provided, state) => ({
+      ...provided,
+      boxShadow: state.isFocused ? '0 0 0 0px var(--focus-color)' : 'none',
+      borderColor: state.isFocused
+        ? 'var(--focus-color)'
+        : 'var(--border-color)',
+      '&:hover': {
+        borderColor: state.isFocused
+          ? 'var(--focus-color)'
+          : 'var(--border-color)',
+      },
+      backgroundColor: 'var(--input-background)',
+      color: 'var(--text-color)',
+    }),
+    menu: (provided) => ({
+      ...provided,
+      backgroundColor: 'var(--input-background)',
+      color: 'var(--text-color)',
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isSelected
+        ? 'var(--selected-background)'
+        : state.isFocused
+          ? 'var(--focus-background)'
+          : 'var(--input-background)',
+      color: 'var(--text-color)',
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      color: 'var(--text-color)',
+    }),
   }
 
   return (
@@ -95,12 +133,13 @@ const Order = () => {
             Type of paper
           </label>
           <div className="flex justify-start">
-            <div className="mb-3 w-full">
+            <div className="w-full shadow border-0 focus:border-1 py-2 px-3">
               <Select
                 options={paperOptions}
                 value={selectedPaperType}
-                onChange={setSelectedPaperType}
-                className="text-secondary"
+                onChange={(option) => setSelectedPaperType(option as PaperType)}
+                styles={customStyles}
+                classNamePrefix="react-select"
                 placeholder="Select paper type"
               />
             </div>
