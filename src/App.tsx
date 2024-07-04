@@ -33,6 +33,7 @@ import NavigationBar from './pages/Navigation/NavigationBar'
 import httpClient from './config/httpClient'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import CompleteRegistration from './pages/CompleteRegistration/CompleteRegistration'
 
 interface UserInterface {
   id: string
@@ -40,8 +41,8 @@ interface UserInterface {
 }
 
 const httpLink = new HttpLink({
-  // uri: 'http://localhost:4000/graphql',
-  uri: 'https://anyday-backend.vercel.app/graphql',
+  uri: 'http://localhost:4000/graphql',
+  // uri: 'https://anyday-backend.vercel.app/graphql',
   fetchOptions: {},
   headers: {},
 })
@@ -124,6 +125,10 @@ const App = () => {
                   </div>
                 </section>
               }
+            ></Route>
+            <Route
+              path="/complete-registration"
+              element={<CompleteRegistration />}
             ></Route>
             <Route path="/howitworks" element={<HowItWorks />}></Route>
             <Route path="/latestreviews" element={<LatestReviews />}></Route>

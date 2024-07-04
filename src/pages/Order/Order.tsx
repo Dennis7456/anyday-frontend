@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Select, { StylesConfig, SingleValue } from 'react-select'
+import { useMutation, gql, ApolloError } from '@apollo/client'
 import './Order.css'
 import Icon from '@mdi/react'
 import { mdiPlus, mdiMinus } from '@mdi/js'
@@ -11,6 +12,16 @@ interface PaperOption {
   label: string
 }
 
+const REGISTER_AND_CREATE_ORDER_MUTATION = gql`
+  mutation registerAndCreateOrder($input: RegisterOrderInput!) {
+    registerAndCreateOrder(input: $input) {
+      success
+      message
+      verificationToken
+    }
+  }
+`
+
 // Define the type for the select's value
 type PaperType = PaperOption | null
 
@@ -19,27 +30,19 @@ const Order = () => {
   const [warning, setWarning] = useState('')
   const [words, setWords] = useState(275)
   const [selectedPaperType, setSelectedPaperType] = useState<PaperType>(null)
+  const [email, setEmail] = useState('')
+  const [dueDate, setDueDate] = useState('')
+
+  // Use the useMutation hook to handle the registerAndCreateOrder mutation
+  const [registerAndCreateOrder, { data, loading, error }] = useMutation(
+    REGISTER_AND_CREATE_ORDER_MUTATION,
+  )
 
   const paperOptions: PaperOption[] = [
     { value: 'essay', label: 'Essay (any type)' },
     { value: 'admission_essay', label: 'Admission essay' },
     { value: 'annotated_bibliography', label: 'Annotated bibliography' },
-    { value: 'argumentative_essay', label: 'Argumentative essay' },
-    { value: 'article_review', label: 'Article review' },
-    { value: 'book_movie_review', label: 'Book/movie review' },
-    { value: 'business_plan', label: 'Business plan' },
-    { value: 'presentation_speech', label: 'Presentation speech' },
-    { value: 'research_proposal', label: 'Research proposal' },
-    { value: 'case_study', label: 'Case study' },
-    { value: 'critical_thinking', label: 'Critical thinking' },
-    { value: 'course_work', label: 'Course work' },
-    { value: 'term_paper', label: 'Term paper' },
-    {
-      value: 'thesis_dissertation_chapter',
-      label: 'Thesis/Dissertation chapter',
-    },
-    { value: 'creative_writing', label: 'Creative writing' },
-    { value: 'other', label: 'Other' },
+    // Add more options here
   ]
 
   useEffect(() => {
@@ -67,10 +70,34 @@ const Order = () => {
     }
   }
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    console.log('form submitted')
-    console.log('Selected Paper Type:', selectedPaperType)
+    // console.log('form submitted');
+    // console.log('Selected Paper Type:', selectedPaperType);
+
+    try {
+      const { data } = await registerAndCreateOrder({
+        variables: {
+          input: {
+            email,
+            paperType: selectedPaperType ? selectedPaperType.value : '',
+            pages: numberOfPages,
+            dueDate,
+          },
+        },
+      })
+      console.log('Order created successfully', data)
+      toast.success(
+        'Confirmation Email has been sent successfully! Please check your inbox to continue.',
+        { position: 'top-right' },
+      )
+    } catch (error) {
+      const apolloError = error as ApolloError
+      console.error('Unexpected error:', apolloError.message)
+      toast.error('Failed to create order. Please try again later.', {
+        position: 'top-right',
+      })
+    }
   }
 
   // Custom styles for react-select
@@ -125,6 +152,8 @@ const Order = () => {
             id="email"
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
@@ -181,6 +210,8 @@ const Order = () => {
             className="opacity-100 required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-30 py-2 px-3 focus:outline-none focus:shadow-outline text-secondary date-pointer"
             type="datetime-local"
             placeholder="Date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             required
           />
         </div>
