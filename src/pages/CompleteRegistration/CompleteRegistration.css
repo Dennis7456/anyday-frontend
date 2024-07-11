@@ -1,0 +1,5 @@
+.editor-container {
+    max-width: 100%; /* Ensure it does not exceed the container's width */
+    overflow-wrap: break-word; /* Wrap long words to prevent horizontal scrolling */
+    word-wrap: break-word;
+  }

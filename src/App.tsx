@@ -16,6 +16,7 @@ import {
   Route,
   Navigate,
   BrowserRouter as Router,
+  useLocation,
 } from 'react-router-dom'
 import { UserProvider } from './userContext'
 import Tables from './pages/Tables/Tables'
@@ -66,6 +67,9 @@ const client = new ApolloClient({
 const App = () => {
   const token = localStorage.getItem('token')
 
+  const location = useLocation()
+  const hideComponent = location.pathname === '/complete-registration'
+
   // Redis configuration
   // useEffect(() => {
   //   ;(async () => {
@@ -102,7 +106,7 @@ const App = () => {
           {/*<section className='px-6 py-8 bg-surface'>
         <NavigationBar /> 
       </section>*/}
-          <NavigationBar />
+          {!hideComponent && <NavigationBar />}
           <ToastContainer />
           <Routes>
             <Route
