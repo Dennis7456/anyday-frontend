@@ -1,115 +1,50 @@
-// Importing helper modules
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+// import React, { useEffect, useRef } from 'react';
+// import Quill, { DeltaStatic } from 'quill';
+// import 'quill/dist/quill.snow.css';
 
-// Importing core components
-import ReactQuill from 'react-quill'
+// // Example type declaration or assertion
+// interface SizeFormat {
+//   whitelist: string[];
+// }
 
-// Importing styles
-import 'react-quill/dist/quill.snow.css'
-import styles from './styles.module.css'
+// const Editor: React.FC = () => {
+//   const editorRef = useRef<HTMLDivElement>(null);
 
-const Editor: React.FC = () => {
-  // Editor state
-  const [value, setValue] = useState<string>('')
+//   useEffect(() => {
+//     if (editorRef.current) {
+//       const quill = new Quill(editorRef.current, {
+//         theme: 'snow',
+//         modules: {
+//           toolbar: [
+//             [{ size: ['extra-small', 'small', 'medium', 'large'] }],
+//             ['bold', 'italic', 'underline', 'strike'],
+//             [{ list: 'ordered' }, { list: 'bullet' }],
+//             ['link', 'image'],
+//             ['clean'],
+//           ],
+//         },
+//       });
 
-  // Editor ref
-  const quillRef = useRef<ReactQuill | null>(null)
+//       // Example custom handler for size
+//       quill.getModule('toolbar').addHandler('size', (value: string) => {
+//         const sizeFormat = quill.getFormat('size') as SizeFormat | undefined;
+//         if (sizeFormat?.whitelist.includes(value)) {
+//           quill.format('size', value);
+//         } else {
+//           quill.format('size', false);
+//         }
+//       });
 
-  // Handler to handle button click
-  const handler = () => {
-    console.log(value)
-  }
+//       // Example registration of custom size format
+//       const Size = Quill.import('formats/size') as SizeFormat;
+//       Size.whitelist = ['extra-small', 'small', 'medium', 'large'];
+//       Quill.register(Size, true);
+//     }
+//   }, []);
 
-  const imageHandler = useCallback(() => {
-    // Create an input element of type 'file'
-    const input = document.createElement('input')
-    input.setAttribute('type', 'file')
-    input.setAttribute('accept', 'image/*')
-    input.click()
+//   return <div ref={editorRef} />;
+// };
 
-    // When a file is selected
-    input.onchange = () => {
-      if (input.files && input.files[0]) {
-        const file = input.files[0]
-        const reader = new FileReader()
+// export default Editor;
 
-        // Read the selected file as a data URL
-        reader.onload = () => {
-          const imageUrl = reader.result
-          const quillEditor = quillRef.current?.getEditor()
-
-          if (quillEditor && typeof imageUrl === 'string') {
-            // Get the current selection range and insert the image at that index
-            const range = quillEditor.getSelection(true)
-            quillEditor.insertEmbed(range.index, 'image', imageUrl, 'user')
-          }
-        }
-
-        reader.readAsDataURL(file)
-      }
-    }
-  }, [])
-
-  const modules = useMemo(
-    () => ({
-      toolbar: {
-        container: [
-          [{ header: [2, 3, 4, false] }],
-          ['bold', 'italic', 'underline', 'blockquote'],
-          [{ color: [] }],
-          [
-            { list: 'ordered' },
-            { list: 'bullet' },
-            { indent: '-1' },
-            { indent: '+1' },
-          ],
-          ['link', 'image'],
-          ['clean'],
-        ],
-        handlers: {
-          image: imageHandler,
-        },
-      },
-      clipboard: {
-        matchVisual: true,
-      },
-    }),
-    [imageHandler],
-  )
-
-  const formats = [
-    'header',
-    'bold',
-    'italic',
-    'underline',
-    'strike',
-    'blockquote',
-    'list',
-    'bullet',
-    'indent',
-    'link',
-    'image',
-    'color',
-    'clean',
-  ]
-
-  return (
-    <div className={styles.wrapper}>
-      <label className={styles.label}>Editor Content</label>
-      <ReactQuill
-        ref={quillRef}
-        className={styles.editor}
-        theme="snow"
-        value={value}
-        formats={formats}
-        modules={modules}
-        onChange={setValue}
-      />
-      <button onClick={handler} className={styles.btn}>
-        Submit
-      </button>
-    </div>
-  )
-}
-
-export default Editor
+export {}

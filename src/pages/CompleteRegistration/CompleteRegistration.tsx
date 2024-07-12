@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Select, { StylesConfig } from 'react-select'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import Icon from '@mdi/react'
-import { FaChevronUp } from 'react-icons/fa6'
-// import { solid, regular } from '@fortawesome/fontawesome-svg-core/import.macro'
-import {
-  mdiPlus,
-  mdiMinus,
-  mdiFileUpload,
-  mdiFormatBold,
-  mdiFormatItalic,
-  mdiFormatUnderline,
-} from '@mdi/js'
+import { FaChevronUp } from 'react-icons/fa'
+import { mdiPlus, mdiMinus } from '@mdi/js'
 import axios from 'axios'
 import { getCookie } from 'src/utils/cookie'
 import './CompleteRegistration.css'
-import Editor from './Editor'
-import 'react-quill/dist/quill.snow.css'
-import { Quill } from 'react-quill'
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { motion } from 'framer-motion'
+import Delta from 'quill-delta'
+import { AnimatePresence, motion } from 'framer-motion'
 
+// Import Quill
+import Quill from 'quill'
+
+// Define PaperOption and UserData interfaces
 interface PaperOption {
   value: string
   label: string
@@ -46,6 +39,19 @@ const CompleteRegistration: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState(false)
   const [rotate, setRotate] = useState(false)
 
+  const editorRef = useRef<ReactQuill | null>(null)
+
+  const handleFontSizeChange = (value: string | number) => {
+    if (editorRef.current) {
+      const quill = editorRef.current.getEditor()
+      if (value === 'small' || value === 'large' || value === 'huge') {
+        quill.format('size', value)
+      } else {
+        quill.format('size', false) // Remove font size
+      }
+    }
+  }
+
   const paperOptions: PaperOption[] = [
     { value: 'essay', label: 'Essay (any type)' },
     { value: 'admission_essay', label: 'Admission essay' },
@@ -57,13 +63,9 @@ const CompleteRegistration: React.FC = () => {
     control: (provided, state) => ({
       ...provided,
       boxShadow: state.isFocused ? '0 0 0 0px var(--focus-color)' : 'none',
-      borderColor: state.isFocused
-        ? 'var(--focus-color)'
-        : 'var(--border-color)',
+      borderColor: state.isFocused ? 'var(--focus-color)' : 'none',
       '&:hover': {
-        borderColor: state.isFocused
-          ? 'var(--focus-color)'
-          : 'var(--border-color)',
+        borderColor: state.isFocused ? 'var(--focus-color)' : 'none',
       },
       backgroundColor: 'var(--input-background)',
       color: 'var(--text-color)',
@@ -122,7 +124,67 @@ const CompleteRegistration: React.FC = () => {
     }
 
     fetchData()
-  }, []) // Empty dependency array ensures this runs once on mount
+  }, [])
+
+  useEffect(() => {
+    if (editorRef.current) {
+      const quill = editorRef.current.getEditor()
+
+      // Custom handler for heart emoji button
+      const customButton = document.createElement('button')
+      customButton.innerHTML = '❤️'
+      customButton.addEventListener('click', () => {
+        const cursorPosition = quill.getSelection()?.index || 0
+        quill.insertText(cursorPosition, '❤️', 'user')
+      })
+
+      const toolbar = quill.getModule('toolbar') as {
+        addHandler: (name: string, handler: () => void) => void
+      }
+      if (toolbar) {
+        toolbar.addHandler('emoji', () => {
+          // const toolbarContainer = toolbar.container;
+          // toolbarContainer.appendChild(customButton);
+          // Use Quill's DOM manipulation to find the toolbar container
+          const toolbarContainer = quill.container
+            .previousSibling as HTMLElement | null
+          const toolbarElement = toolbarContainer?.querySelector('./ql-toolbar')
+
+          // Custom handler for file insert button
+          toolbar.addHandler('file', () => {
+            const input = document.createElement('input')
+            input.setAttribute('type', 'file')
+            input.setAttribute('accept', '*') // Adjust accept attribute as needed
+            input.onchange = () => {
+              const file = input.files?.[0]
+              if (file) {
+                const range = quill.getSelection()
+                if (range) {
+                  const { index } = range
+                  quill.insertEmbed(index, 'file', file.name)
+                }
+              }
+            }
+            input.click()
+          })
+
+          if (toolbarElement) {
+            toolbarElement.appendChild(customButton)
+          }
+        })
+      }
+
+      const select = quill.container.querySelector(
+        '.ql-size select',
+      ) as HTMLSelectElement
+      if (select) {
+        select.addEventListener('change', () => {
+          const selectedValue = select.value
+          handleFontSizeChange(selectedValue)
+        })
+      }
+    }
+  }, [])
 
   const toggleShowInstructions = (): void => {
     if (content.length > 0) {
@@ -130,6 +192,7 @@ const CompleteRegistration: React.FC = () => {
       setShowInstructions(!showInstructions)
     }
   }
+
   const handlePlus = () => {
     setNumberOfPages((prevNumberOfPages) => prevNumberOfPages + 1)
   }
@@ -156,19 +219,6 @@ const CompleteRegistration: React.FC = () => {
     }
   }
 
-  const modules = {
-    toolbar: [
-      [{ font: [] }],
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      [{ align: [] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ color: [] }, { background: [] }],
-      ['link', 'image', 'video'],
-      ['emoji'],
-      ['clean'],
-    ],
-  }
-
   return (
     <div className="registration-container bg-gradient-to-r to-primary from-secondary-container h-full">
       <div className="text-2xl mx-[35px] p-[35px]">Complete Your Order</div>
@@ -178,15 +228,28 @@ const CompleteRegistration: React.FC = () => {
       >
         <div className="ml-[35px] px-[35px]">
           <form onSubmit={handleSubmit} className="">
-            {/* <label className='text-sm font-medium text-gray-700'>More details about your order</label> */}
             <div className="bg-on-primary editor-container">
               <ReactQuill
-                value={content}
-                onChange={setContent}
-                modules={modules}
+                ref={(el) => {
+                  if (el) editorRef.current = el
+                }}
                 theme="snow"
-                className="h-[350px] shadow-xl"
-                placeholder={'Write something or insert a heart ♥'}
+                modules={{
+                  toolbar: {
+                    container: [
+                      [{ size: ['small', false, 'large', 'huge'] }],
+                      [{ font: [] }],
+                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                      [{ align: [] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ color: [] }, { background: [] }],
+                      ['emoji'], // Add emoji button to toolbar
+                      ['link', 'image', 'video', 'formula'],
+                      [{ insert: 'file' }], // Add file insert option
+                      ['clean'],
+                    ],
+                  },
+                }}
               />
             </div>
             <div className="flex flex-col items-start justify-center gap-[35px] mt-[35px]">
@@ -265,7 +328,6 @@ const CompleteRegistration: React.FC = () => {
             <h3 className="text-xs">ORDER SUMMARY</h3>
             <span>
               <FaChevronUp />
-              {/* <FontAwesomeIcon  size='sm' icon={regular('chevron-up')}/> */}
             </span>
           </div>
           <div
