@@ -8,7 +8,6 @@ import { mdiPlus, mdiMinus } from '@mdi/js'
 import axios from 'axios'
 import { getCookie } from 'src/utils/cookie'
 import './CompleteRegistration.css'
-import Delta from 'quill-delta'
 import { AnimatePresence, motion } from 'framer-motion'
 
 // Import Quill
@@ -138,40 +137,41 @@ const CompleteRegistration: React.FC = () => {
         quill.insertText(cursorPosition, '❤️', 'user')
       })
 
-      const toolbar = quill.getModule('toolbar') as {
-        addHandler: (name: string, handler: () => void) => void
-      }
+      const toolbar = quill.getModule('toolbar')
       if (toolbar) {
-        toolbar.addHandler('emoji', () => {
-          // const toolbarContainer = toolbar.container;
-          // toolbarContainer.appendChild(customButton);
-          // Use Quill's DOM manipulation to find the toolbar container
-          const toolbarContainer = quill.container
-            .previousSibling as HTMLElement | null
-          const toolbarElement = toolbarContainer?.querySelector('./ql-toolbar')
-
-          // Custom handler for file insert button
-          toolbar.addHandler('file', () => {
-            const input = document.createElement('input')
-            input.setAttribute('type', 'file')
-            input.setAttribute('accept', '*') // Adjust accept attribute as needed
-            input.onchange = () => {
-              const file = input.files?.[0]
-              if (file) {
-                const range = quill.getSelection()
-                if (range) {
-                  const { index } = range
-                  quill.insertEmbed(index, 'file', file.name)
-                }
-              }
+        const toolbarContainer = quill.container.previousSibling as HTMLElement
+        const emojiButton = toolbarContainer.querySelector('.ql-emoji')
+        if (emojiButton) {
+          emojiButton.addEventListener('click', () => {
+            const toolbarElement = toolbarContainer.querySelector('.ql-toolbar')
+            if (toolbarElement) {
+              toolbarElement.appendChild(customButton)
             }
-            input.click()
           })
+        }
 
-          if (toolbarElement) {
-            toolbarElement.appendChild(customButton)
+        // Custom handler for file insert button
+        const fileInput = document.createElement('input')
+        fileInput.setAttribute('type', 'file')
+        fileInput.setAttribute('accept', '*')
+        fileInput.style.display = 'none'
+        fileInput.addEventListener('change', () => {
+          const file = fileInput.files?.[0]
+          if (file) {
+            const range = quill.getSelection()
+            if (range) {
+              const { index } = range
+              quill.insertEmbed(index, 'file', file.name)
+            }
           }
         })
+
+        const fileButton = document.createElement('button')
+        fileButton.innerHTML = '📁'
+        fileButton.addEventListener('click', () => fileInput.click())
+
+        toolbarContainer.appendChild(fileInput)
+        toolbarContainer.appendChild(fileButton)
       }
 
       const select = quill.container.querySelector(
@@ -245,7 +245,7 @@ const CompleteRegistration: React.FC = () => {
                       [{ color: [] }, { background: [] }],
                       ['emoji'], // Add emoji button to toolbar
                       ['link', 'image', 'video', 'formula'],
-                      [{ insert: 'file' }], // Add file insert option
+                      // ['file'],
                       ['clean'],
                     ],
                   },
