@@ -164,6 +164,7 @@ const Order = () => {
           <div className="flex justify-start">
             <div className="w-full shadow border-0 focus:border-1 py-2 px-3">
               <Select
+                className="z-0"
                 options={paperOptions}
                 value={selectedPaperType}
                 onChange={(option) => setSelectedPaperType(option as PaperType)}
