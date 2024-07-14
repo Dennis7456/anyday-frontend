@@ -1,5 +1,27 @@
-/* .editor-container {
+.ql-editor.ql-blank::before {
+	content: none;
+}
+
+.ql-editor.ql-blank::after {
+	color: rgba(0, 0, 0, 0.6);
+	content: attr(data-placeholder);
+	display: block;
+	font-style: italic;
+	margin-top: -1.42em;
+	min-height: 30em;
+	pointer-events: none;
+
+}
+
+.ql-editor {
   max-width: 100%;
-  overflow-wrap: break-word;
   word-wrap: break-word;
-} */
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  height: 400px;
+}
+
+.editor-container {
+  width: 850px;
+  
+}
