@@ -4208,6 +4208,14 @@
   dependencies:
     parchment "^1.1.2"
 
+"@types/quill@^2.0.14":
+  version "2.0.14"
+  resolved "https://registry.npmjs.org/@types/quill/-/quill-2.0.14.tgz"
+  integrity sha512-zvoXCRnc2Dl8g+7/9VSAmRWPN6oH+MVhTPizmCR+GJCITplZ5VRVzMs4+a/nOE3yzNwEZqylJJrMB07bwbM1/g==
+  dependencies:
+    parchment "^1.1.2"
+    quill-delta "^5.1.0"
+
 "@types/range-parser@*":
   version "1.2.7"
   resolved "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.7.tgz"
