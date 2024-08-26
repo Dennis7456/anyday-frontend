@@ -41,9 +41,11 @@ interface UserInterface {
   email: string
 }
 
+const baseUrl = process.env.BASE_URL
+  ? process.env.BASE_URL
+  : 'https://anyday-backend-app-hufozn77kq-uc.a.run.app/graphql'
 const httpLink = new HttpLink({
-  uri: 'http://localhost:4000/graphql',
-  // uri: 'https://anyday-backend.vercel.app/graphql',
+  uri: baseUrl,
   fetchOptions: {},
   headers: {},
 })
@@ -69,19 +71,6 @@ const App = () => {
 
   const location = useLocation()
   const hideComponent = location.pathname === '/complete-registration'
-
-  // Redis configuration
-  // useEffect(() => {
-  //   ;(async () => {
-  //     try {
-  //       const resp = await httpClient.get('//localhost:5000/@me')
-  //       setUser(resp.data)
-  //     } catch (error) {
-  //       console.log('Not authenticated')
-  //       // setUser(null);
-  //     }
-  //   })()
-  // }, [])
 
   return (
     <ApolloProvider client={client}>
