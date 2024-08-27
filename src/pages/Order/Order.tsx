@@ -42,7 +42,22 @@ const Order = () => {
     { value: 'essay', label: 'Essay (any type)' },
     { value: 'admission_essay', label: 'Admission essay' },
     { value: 'annotated_bibliography', label: 'Annotated bibliography' },
-    // Add more options here
+    { value: 'argumentative_essay', label: 'Argumentative essay' },
+    { value: 'article_review', label: 'Article review' },
+    { value: 'book_movie_review', label: 'Book/movie review' },
+    { value: 'business_plan', label: 'Business plan' },
+    { value: 'presentation_speech', label: 'Presentation speech' },
+    { value: 'research_proposal', label: 'Research proposal' },
+    { value: 'case_study', label: 'Case study' },
+    { value: 'critical_thinking', label: 'Critical thinking' },
+    { value: 'course_work', label: 'Course work' },
+    { value: 'term_paper', label: 'Term paper' },
+    {
+      value: 'thesis_dissertation_chapter',
+      label: 'Thesis/Dissertation chapter',
+    },
+    { value: 'creative_writing', label: 'Creative writing' },
+    { value: 'other', label: 'Other' },
   ]
 
   useEffect(() => {

@@ -109,6 +109,10 @@ const CompleteRegistration: React.FC = () => {
     { value: 'other', label: 'Other' },
   ]
 
+  const baseUrl =
+    process.env.REACT_APP_BACKEND_URL ||
+    'https://anyday-backend-app-hufozn77kq-uc.a.run.app'
+
   const customStyles: StylesConfig<PaperOption, false> = {
     control: (provided, state) => ({
       ...provided,
@@ -141,6 +145,8 @@ const CompleteRegistration: React.FC = () => {
   }
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchData = async () => {
       try {
         const tokenFromCookie = getCookie('token')
@@ -151,7 +157,7 @@ const CompleteRegistration: React.FC = () => {
 
         setToken(tokenFromCookie)
 
-        const url = 'http://localhost:4000/api/redis/user-data'
+        const url = `${baseUrl}/api/redis/user-data`
         const response = await axios.post<UserData>(url, null, {
           headers: {
             Authorization: `Bearer ${tokenFromCookie}`,
@@ -159,21 +165,27 @@ const CompleteRegistration: React.FC = () => {
           },
         })
 
-        setUserData(response.data)
-        setEmail(response.data.email)
-        setNumberOfPages(response.data.pages)
-        setDueDate(response.data.dueDate)
-        setSelectedPaperType(
-          paperOptions.find(
-            (option) => option.value === response.data.paperType,
-          ) || null,
-        )
+        if (isMounted) {
+          setUserData(response.data)
+          setEmail(response.data.email)
+          setNumberOfPages(response.data.pages)
+          setDueDate(response.data.dueDate)
+          setSelectedPaperType(
+            paperOptions.find(
+              (option) => option.value === response.data.paperType,
+            ) || null,
+          )
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
       }
     }
 
     fetchData()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   useEffect(() => {
@@ -295,7 +307,7 @@ const CompleteRegistration: React.FC = () => {
         return
       }
 
-      const url = 'http://localhost:4000/api/redis/user-data/update'
+      const url = `${baseUrl}/api/redis/user-data/update`
       await axios.post(url, updatedUserData, {
         headers: {
           Authorization: `Bearer ${token}`,
