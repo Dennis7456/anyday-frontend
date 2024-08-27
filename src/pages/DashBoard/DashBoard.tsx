@@ -44,8 +44,11 @@ function Dashboard() {
 
   const { loading, data, error } = useQuery(CURRENT_USER_QUERY, {
     onCompleted: (data) => {
-      const { currentUser } = data
-      console.log(currentUser.id)
+      // console.log("Data", data)
+      // const { currentUser } = data
+      // console.log(currentUser.loggedInUser)
+      const loggedInUser = data?.loggedInUser
+      console.log('Logged In User:', loggedInUser)
     },
     onError: (error) => {
       console.error(error.message)

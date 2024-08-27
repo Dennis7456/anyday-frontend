@@ -35,6 +35,9 @@ import httpClient from './config/httpClient'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import CompleteRegistration from './pages/CompleteRegistration/CompleteRegistration'
+import PrivateRoutes from './utils/PrivateRoutes'
+import PageNotFound from './pages/PageNotFound/PageNotFound'
+import RedirectIfLoggedIn from './components/RedirectLoggedIn/RedirectLoggedIn'
 
 interface UserInterface {
   id: string
@@ -70,7 +73,8 @@ const App = () => {
   const token = localStorage.getItem('token')
 
   const location = useLocation()
-  const hideComponent = location.pathname === '/complete-registration'
+  const hideComponent =
+    location.pathname === '/complete-registration' || token !== null
 
   return (
     <ApolloProvider client={client}>
@@ -87,7 +91,7 @@ const App = () => {
               content="Professional academic writing services"
             />
           </Helmet>
-          {/* {user !== null ? null : (
+          {/* {token !== null ? null : (
         <section className="px-6 py-2 bg-surface">
           <NavigationBar />
         </section>
@@ -98,25 +102,31 @@ const App = () => {
           {!hideComponent && <NavigationBar />}
           <ToastContainer />
           <Routes>
+            <Route element={<PrivateRoutes />}>
+              <Route path="/dashboard" element={<DashBoard />}></Route>
+            </Route>
             <Route
               path="/"
               element={
-                <section className="bg-gradient-to-r to-primary from-secondary-container flex justify-around items-center p-10 h-50">
-                  <div className="">
-                    <p className="tracking-wider text-5xl pr-10">
-                      Online Essay Writing Service{' '}
-                    </p>
-                    <p className="text-5xl tracking-wider mt-10">
-                      Available 24/7
-                    </p>
-                    <p className="text-lg py-10">
-                      We do all types of writing at the cheapest rates in town.
-                    </p>
-                  </div>
-                  <div>
-                    <Order />
-                  </div>
-                </section>
+                <RedirectIfLoggedIn>
+                  <section className="bg-gradient-to-r to-primary from-secondary-container flex justify-around items-center p-10 h-50">
+                    <div className="">
+                      <p className="tracking-wider text-5xl pr-10">
+                        Online Essay Writing Service{' '}
+                      </p>
+                      <p className="text-5xl tracking-wider mt-10">
+                        Available 24/7
+                      </p>
+                      <p className="text-lg py-10">
+                        We do all types of writing at the cheapest rates in
+                        town.
+                      </p>
+                    </div>
+                    <div>
+                      <Order />
+                    </div>
+                  </section>
+                </RedirectIfLoggedIn>
               }
             ></Route>
             <Route
@@ -133,10 +143,10 @@ const App = () => {
               path="/auth_password_reset"
               element={<AuthPasswordReset />}
             ></Route>
-            <Route path="/dashboard" element={<DashBoard />}></Route>
+            {/* <Route path="/dashboard" element={<DashBoard />}></Route> */}
             <Route path="/settings" element={<Settings />}></Route>
             <Route path="tables" element={<Tables />}></Route>
-            {/*<Route path='/*' element={ <Navigate to="/dashboard" /> }/>*/}
+            <Route path="*" element={<PageNotFound />} />
           </Routes>
         </div>
       </UserProvider>
