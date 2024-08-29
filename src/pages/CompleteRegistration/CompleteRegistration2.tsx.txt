@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useDispatch, UseDispatch } from 'react-redux'
-import { removeFile } from 'src/slices/uploadSlice'
 import Select, { StylesConfig } from 'react-select'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -11,14 +9,14 @@ import axios from 'axios'
 import { getCookie } from 'src/utils/cookie'
 import './CompleteRegistration.css'
 import { AnimatePresence, motion } from 'framer-motion'
+import Quill from 'quill'
 import { EmbedBlot } from 'parchment'
 import FileUpload from 'src/components/FileManager/FileUpload'
 import FileList from 'src/components/FileManager/FileList'
 import FilePreview from 'src/components/FileManager/FilePreview'
-import Quill from 'quill'
-import '../../components/FileManager/Quill/FileBlot'
-import { FileValue } from 'src/types'
+// import Parchment from 'parchment';
 
+// const BlockEmbed: typeof BlockEmbed = Quill.import('blots/block/embed') as typeof BlockEmbed;
 const BlockEmbed = Quill.import('blots/block/embed') as typeof EmbedBlot
 
 interface PaperOption {
@@ -38,13 +36,19 @@ interface UserData {
   instructions: string
 }
 
+interface FileValue {
+  url: string
+  name: string
+}
+
 class FileBlot extends BlockEmbed {
   static blotName = 'file'
   static tagName = 'a'
+  // static scope = Parchment.Scope.INLINE;
 
   static create(value: FileValue) {
     const node = super.create() as HTMLAnchorElement
-    // node.setAttribute('href', value.url);
+    node.setAttribute('href', value.url)
     node.setAttribute('download', value.name)
     node.textContent = value.name
     return node
@@ -80,8 +84,7 @@ const CompleteRegistration: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<FileValue[]>([])
 
   const editorRef = useRef<ReactQuill | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const dispatch = useDispatch()
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFontSizeChange = (value: string | number) => {
     if (editorRef.current) {
@@ -127,18 +130,18 @@ const CompleteRegistration: React.FC = () => {
       display: 'flex',
       flexWrap: 'nowrap',
       // borderColor: 'hsl(0deg 78.56% 55.56%);',
-      borderColor: 'transparent',
-      '&:hover': { borderColor: state.isFocused ? 'gray' : 'gray' },
+      borderColor: "transparent",
+      '&:hover': { borderColor: state.isFocused ? 'gray' : 'gray'},
       boxShadow: state.isFocused ? '0 0 0 0px var(--focus-color)' : 'none',
       border: '0.5px solid black',
-      width: 'full',
+      width: 'full'
     }),
     indicatorSeparator: (provided, state) => ({
-      ...provided,
-      backgroundColor: 'black', // Change the color of the separator
-      width: '0.5px', // Adjust the width of the separator
-      margin: '0 8px', // Adjust the margin (spacing) around the separator
-    }),
+    ...provided,
+    backgroundColor: 'black', // Change the color of the separator
+    width: '0.5px', // Adjust the width of the separator
+    margin: '0 8px', // Adjust the margin (spacing) around the separator
+  }),
     menu: (provided, state) => ({
       ...provided,
       // backgroundColor: 'var(--input-background)',
@@ -190,10 +193,10 @@ const CompleteRegistration: React.FC = () => {
           setDueDate(response.data.dueDate)
           setSelectedPaperType(
             paperOptions.find(
-              (option) =>
-                option.value === response.data.paperType.toLowerCase(),
+              (option) => option.value === response.data.paperType.toLowerCase(),
             ) || null,
           )
+          console.log("Paper Type", selectedPaperType )
         }
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -227,8 +230,13 @@ const CompleteRegistration: React.FC = () => {
           const quill = editorRef.current.getEditor()
 
           const cursorPosition = quill.getSelection()?.index || 0
-          const fileLink = `<a href="${URL.createObjectURL(file)}" download="${file.name}"> 📁 ${file.name}</a>`
-          quill.clipboard.dangerouslyPasteHTML(cursorPosition, fileLink)
+          // const fileLink = `<a href="${URL.createObjectURL(file)}" download="${file.name}"> 📁 ${file.name}</a>`
+          const fileValue: FileValue = {
+            url: URL.createObjectURL(file),
+            name: file.name,
+          }
+          quill.insertEmbed(cursorPosition, 'file', fileValue)
+          // quill.clipboard.dangerouslyPasteHTML(cursorPosition, fileLink)
         }
       }
 
@@ -262,9 +270,9 @@ const CompleteRegistration: React.FC = () => {
           toolbarContainer.appendChild(fileButton)
         }
 
-        // if (!toolbarContainer.querySelector('.ql-file-input')) {
-        //   toolbarContainer.appendChild(fileInput)
-        // }
+        if (!toolbarContainer.querySelector('.ql-file-input')) {
+          toolbarContainer.appendChild(fileInput)
+        }
       }
 
       if (quill.root.parentNode) {
@@ -326,68 +334,55 @@ const CompleteRegistration: React.FC = () => {
     }
   }
 
-  const handleFileUpload = (files: File[]) => {
-    const newFiles = files.map((file, index) => ({
-      id: Date.now() + index,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file: file,
-      url: URL.createObjectURL(file),
-    }))
-
-    setUploadedFiles((prevFiles) => [...prevFiles, ...newFiles])
-  }
-
-  const handleRemoveFile = (id: number) => {
-    setUploadedFiles((prevFiles) => prevFiles.filter((file) => file.id !== id))
-    dispatch(removeFile(id))
-  }
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    try {
-      const updatedUserData: UserData = {
-        firstName,
-        lastName,
-        email,
-        dateOfBirth,
-        phoneNumber,
-        paperType: selectedPaperType?.value || '',
-        pages: numberOfPages,
-        dueDate,
-        instructions: content,
-      }
+  //   try {
+  //     const updatedUserData: UserData = {
+  //       firstName,
+  //       lastName,
+  //       email,
+  //       dateOfBirth,
+  //       phoneNumber,
+  //       paperType: selectedPaperType?.value || '',
+  //       pages: numberOfPages,
+  //       dueDate,
+  //       instructions: content 
+  //     }
 
-      if (!token) {
-        console.error('Token is missing')
-        return
-      }
+  //     if (!token) {
+  //       console.error('Token is missing')
+  //       return
+  //     }
 
-      const url = `${baseUrl}/api/redis/user-data/update`
-      await axios.post(url, updatedUserData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
+  //     const url = `${baseUrl}/api/redis/user-data/update`
+  //     await axios.post(url, updatedUserData, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     })
 
-      console.log('Data updated successfully')
-    } catch (error) {
-      console.error('Error updating data:', error)
-    }
-  }
+  //     console.log('Data updated successfully')
+  // } 
+  // catch (error) {
+
+  // }
+}
 
   return (
     <div className="registration-container bg-gradient-to-r to-primary from-secondary-container h-full">
-      <div className="flex items-center justify-start px-[75px] pt-[35px]">
+      <div className=" flex items-center justify-start px-[50px] py-[35px]">
         <div className="">
           <a href="/">
-            <img src="/media/logo.png" alt="Any Day Logo" className="logo" />
+            <img
+              src="/media/logo.png"
+              alt="Any Day Logo"
+              className="logo"
+            ></img>
           </a>
         </div>
       </div>
-      <div className="text-2xl mx-[75px] py-[15px] font-light">
+      <div className="text-2xl mx-[35px] p-[35px] font-light">
         Complete Your Order
       </div>
       <div
@@ -417,8 +412,6 @@ const CompleteRegistration: React.FC = () => {
                   },
                 }}
                 placeholder="Add instructions here or leave a ❤️"
-                value={content}
-                onChange={setContent}
               />
             </div>
             <div className="flex flex-col items-start justify-center gap-[15px] mt-[35px]">
@@ -432,11 +425,11 @@ const CompleteRegistration: React.FC = () => {
                 type="text"
                 id="first-name"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={handleFirstNameChange}
                 className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
               />
               <label
-                htmlFor="last-name"
+                htmlFor="second-name"
                 className="block text-sm font-medium text-gray-700"
               >
                 Last Name
@@ -445,46 +438,46 @@ const CompleteRegistration: React.FC = () => {
                 type="text"
                 id="last-name"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={handleLastNameChange}
                 className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
               />
               <label
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                Email Address
+                Email
               </label>
               <input
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
               />
               <label
-                htmlFor="date-of-birth"
+                htmlFor="d-o-b"
                 className="block text-sm font-medium text-gray-700"
               >
                 Date of Birth
               </label>
               <input
-                type="date"
-                id="date-of-birth"
+                type="datetime-local"
+                id="d-o-b"
                 value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                onChange={handleDateOfBirthChange}
+                className="opacity-100 required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-30 py-2 px-3 focus:outline-none focus:shadow-outline text-secondary date-pointer"
               />
               <label
                 htmlFor="phone-number"
                 className="block text-sm font-medium text-gray-700"
               >
-                Phone Number
+                Phone number
               </label>
               <input
-                type="tel"
+                type="number"
                 id="phone-number"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={handlePhoneNumberChange}
                 className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
               />
               <label
@@ -494,12 +487,12 @@ const CompleteRegistration: React.FC = () => {
                 Paper Type
               </label>
               <Select
-                inputId="paper-type"
-                options={paperOptions}
+                className="w-[270px] shadow border-0 focus:border-1 py-2 px-3"
+                id="paper-type"
                 value={selectedPaperType}
-                onChange={setSelectedPaperType}
+                onChange={handlePaperTypeChange}
+                options={paperOptions}
                 styles={customStyles}
-                className="w-[270px]"
               />
               <label
                 htmlFor="pages"
@@ -515,9 +508,7 @@ const CompleteRegistration: React.FC = () => {
                 >
                   <Icon path={mdiMinus} size={1} />
                 </button>
-                <span className="mx-2" id="pages">
-                  {numberOfPages}
-                </span>
+                <span className="mx-2" id="pages">{numberOfPages}</span>
                 <button
                   type="button"
                   onClick={handlePageIncrement}
@@ -527,33 +518,18 @@ const CompleteRegistration: React.FC = () => {
                 </button>
               </div>
               <label
-                htmlFor="due-date"
+                htmlFor="dueDate"
                 className="block text-sm font-medium text-gray-700"
               >
                 Due Date
               </label>
               <input
-                type="date"
-                id="due-date"
+                type="datetime-local"
+                id="dueDate"
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                onChange={handleDueDateChange}
+                className="opacity-100 required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-30 py-2 px-3 focus:outline-none focus:shadow-outline text-secondary date-pointer"
               />
-              <label
-                htmlFor="file-upload"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Upload Files
-              </label>
-              <FileUpload onUpload={handleFileUpload} />
-              <FileList propFiles={uploadedFiles} onRemove={handleRemoveFile} />
-              {uploadedFiles.length > 0 && (
-                <div className="file-previews mt-4">
-                  {uploadedFiles.map((fileValue) => (
-                    <FilePreview key={fileValue.id} fileValue={fileValue} />
-                  ))}
-                </div>
-              )}
               <button
                 type="submit"
                 className="mt-4 inline-flex items-end px-7 py-2 border-transparent text-sm rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-[35px] border-2 font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container"

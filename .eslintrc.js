@@ -26,6 +26,7 @@ module.exports = {
     '@typescript-eslint/no-use-before-define': 'error',
     // '@typescript-eslint/no-unused-vars': 'warn',
     '@typescript-eslint/no-unused-vars': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
     'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
   },
   settings: {

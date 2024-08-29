@@ -23,3 +23,8 @@
 .editor-container {
   width: 850px;
 }
+
+.logo {
+  height:fit-content;
+  width: 160px;
+}

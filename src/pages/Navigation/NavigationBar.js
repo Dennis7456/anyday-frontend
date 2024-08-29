@@ -31,7 +31,7 @@ const NavigationBar = () => {
   return (
     <>
       <nav className="">
-        <ul className="flex justify-around items-center my-4">
+        <ul className="flex justify-around items-center mt-4">
           <li>
             <a href="/">
               <img

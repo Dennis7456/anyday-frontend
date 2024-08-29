@@ -44,9 +44,10 @@ interface UserInterface {
   email: string
 }
 
-const baseUrl = process.env.BASE_URL
-  ? process.env.BASE_URL
+const baseUrl = process.env.REACT_APP_BACKEND_URL
+  ? `${process.env.REACT_APP_BACKEND_URL}/graphql`
   : 'https://anyday-backend-app-hufozn77kq-uc.a.run.app/graphql'
+
 const httpLink = new HttpLink({
   uri: baseUrl,
   fetchOptions: {},
@@ -88,6 +89,8 @@ const App = () => {
   const location = useLocation()
   const hideComponent =
     location.pathname === '/complete-registration' || token !== null
+
+  console.log('Environment varriable', baseUrl)
 
   return (
     <ApolloProvider client={client}>

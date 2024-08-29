@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import Select, { StylesConfig, SingleValue } from 'react-select'
+import Select, {
+  StylesConfig,
+  SingleValue,
+  components,
+  DropdownIndicatorProps,
+} from 'react-select'
 import { useMutation, gql, ApolloError } from '@apollo/client'
 import './Order.css'
 import Icon from '@mdi/react'
-import { mdiPlus, mdiMinus } from '@mdi/js'
+import { mdiPlus, mdiMinus, mdiChevronDown } from '@mdi/js'
 import { toast } from 'react-toastify'
 
 // Define the type for paper options
@@ -115,26 +120,43 @@ const Order = () => {
     }
   }
 
+  // Custom Dropdown Indicator
+  const CustomDropdownIndicator = (
+    props: DropdownIndicatorProps<PaperOption>,
+  ) => {
+    return (
+      <components.DropdownIndicator {...props}>
+        <Icon path={mdiChevronDown} size={1} style={{ color: 'black' }} />
+      </components.DropdownIndicator>
+    )
+  }
+
   // Custom styles for react-select
   const customStyles: StylesConfig<PaperOption, false> = {
     control: (provided, state) => ({
       ...provided,
+      background: 'transparent',
+      display: 'flex',
+      flexWrap: 'nowrap',
+      // borderColor: 'hsl(0deg 78.56% 55.56%);',
+      borderColor: 'transparent',
+      '&:hover': { borderColor: state.isFocused ? 'gray' : 'gray' },
       boxShadow: state.isFocused ? '0 0 0 0px var(--focus-color)' : 'none',
-      borderColor: state.isFocused
-        ? 'var(--focus-color)'
-        : 'var(--border-color)',
-      '&:hover': {
-        borderColor: state.isFocused
-          ? 'var(--focus-color)'
-          : 'var(--border-color)',
-      },
-      backgroundColor: 'var(--input-background)',
-      color: 'var(--text-color)',
+      border: '0.5px solid black',
+      width: 'full',
     }),
-    menu: (provided) => ({
+    indicatorSeparator: (provided, state) => ({
       ...provided,
-      backgroundColor: 'var(--input-background)',
-      color: 'var(--text-color)',
+      backgroundColor: 'black', // Change the color of the separator
+      width: '0.5px', // Adjust the width of the separator
+      margin: '0 8px', // Adjust the margin (spacing) around the separator
+    }),
+    menu: (provided, state) => ({
+      ...provided,
+      // backgroundColor: 'var(--input-background)',
+      backgroundColor: 'transparent',
+      // color: 'var(--text-color)',
+      color: 'transparent',
     }),
     option: (provided, state) => ({
       ...provided,
@@ -177,7 +199,7 @@ const Order = () => {
             Type of paper
           </label>
           <div className="flex justify-start">
-            <div className="w-full shadow border-0 focus:border-1 py-2 px-3">
+            {/* <div className="w-full shadow border-0 focus:border-1 py-2 px-3">
               <Select
                 className="z-0"
                 options={paperOptions}
@@ -187,6 +209,17 @@ const Order = () => {
                 classNamePrefix="react-select"
                 placeholder="Select paper type"
               />
+            </div> */}
+            <div className="w-full shadow border-0 focus:border-1 py-2 px-3">
+              <Select
+                options={paperOptions}
+                value={selectedPaperType}
+                onChange={(option) => setSelectedPaperType(option as PaperType)}
+                styles={customStyles}
+                components={{ DropdownIndicator: CustomDropdownIndicator }}
+                classNamePrefix="react-select"
+                placeholder="Select paper type"
+              ></Select>
             </div>
           </div>
         </div>
@@ -214,8 +247,8 @@ const Order = () => {
           >
             <Icon path={mdiPlus} title="" size={1} />
           </button>
-          <div className="ml-5 text-secondary bg-primary-container rounded px-1 py-1 text-sm font-semibold">
-            {words} words.
+          <div className="ml-5 text-secondary bg-primary-container rounded px-1 py-1 text-sm font-semibold text-center">
+            {words} words
           </div>
         </div>
         <label className="pb-2 pt-3 text-start block text-on-background text-sm font-light">
@@ -232,7 +265,7 @@ const Order = () => {
           />
         </div>
         <div className="flex justify-center pt-4">
-          <div className="bg-warning text-xs font-md text-secondary text-on-primary rounded w-full py-2 border-1 outline-5 border-primary px-3">
+          <div className="bg-warning text-xs font-md text-secondary text-on-primary rounded w-full py-2 border-1 outline-5 border-primary px-3 text-center">
             We recommend leaving at least <span className="font-bold">1</span>{' '}
             hour to complete the order.
           </div>
