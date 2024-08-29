@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, UseDispatch } from 'react-redux'
-import { clearFiles, removeFile } from 'src/slices/uploadSlice'
+import { addFile, clearFiles, removeFile } from 'src/slices/uploadSlice'
 import Select, { StylesConfig } from 'react-select'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -73,8 +73,15 @@ const CompleteRegistration: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState<string>('')
   const [token, setToken] = useState<string | null>(null)
   const [content, setContent] = useState<string>('')
+  const [summary, setSummary] = useState<string>('')
+  const [myDetails, setMyDetails] = useState<string[]>([])
+  const [showSummary, setShowSummary] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
-  const [rotate, setRotate] = useState(false)
+  const [showMyDetails, setShowMyDetails] = useState(false)
+  const [rotateSummary, setRotateSummary] = useState(false)
+  const [rotateInstructions, setRotateInstructions] = useState(false)
+  const [rotateMyDetails, setRotateMyDetails] = useState(false)
+  // const [rotate, setRotate] = useState(false)
   const [showDestinations, setShowDestinations] = useState(false)
   const [instructions, setInstructions] = useState([])
   const [uploadedFiles, setUploadedFiles] = useState<FileValue[]>([])
@@ -215,9 +222,7 @@ const CompleteRegistration: React.FC = () => {
       const insertHeartEmoji = () => {
         const cursorPosition = quill.getSelection()?.index || 0
         quill.insertText(cursorPosition, '❤️', 'user')
-
         const newPosition = cursorPosition + 2
-
         quill.setSelection(newPosition, 0)
       }
 
@@ -239,10 +244,60 @@ const CompleteRegistration: React.FC = () => {
 
       const fileInput = document.createElement('input')
       fileInput.setAttribute('type', 'file')
-      fileInput.setAttribute('accept', '*')
+      // fileInput.setAttribute('accept', '*')
+      fileInput.setAttribute('multiple', '')
       fileInput.style.display = 'none'
       fileInput.className = 'ql-file-input'
-      fileInput.addEventListener('change', handleFileInputChange)
+      // fileInput.addEventListener('change', handleFileInputChange)
+      fileInput.addEventListener('change', (event) => {
+        const files = (event.target as HTMLInputElement).files
+
+        if (files) {
+          const fileArray = Array.from(files)
+
+          fileArray.forEach((file, index) => {
+            const fileData = {
+              id: Date.now() + index,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              file: file,
+              url: URL.createObjectURL(file),
+            }
+
+            const quill = editorRef.current?.getEditor()
+            const cursorPosition = quill?.getSelection()?.index || 0
+            //     const fileLink = `<div id="file-${fileData.id}" style="display: flex; align-items: center;">
+            //   <a href="${fileData.url}" download="${fileData.name}"> 📁 ${fileData.name}</a>
+            //   <button className="cursor-pointer" type="button" onclick="removeFile(${fileData.id})" style="margin-left: 10px; border: none; background: none; cursor: pointer;">
+            //     ❌
+            //   </button>
+            // </div>`
+            const fileLink = `<a href="${fileData.url}" download="${fileData.name}"> 📁 ${fileData.name}</a>`
+            if (quill) {
+              quill?.clipboard.dangerouslyPasteHTML(cursorPosition, fileLink)
+            }
+            setUploadedFiles((prevFiles) => [...prevFiles, fileData])
+            dispatch(addFile(fileData))
+          })
+        }
+      })
+
+      // Function to remove file by ID
+      const removeFileHandler = (fileId: number) => {
+        // const quill = editorRef.current?.getEditor();
+        // Remove the file link from the Quill editor
+        // if (quill) {
+        //   const fileElement = document.getElementById(`file-${fileId}`);
+        //   if (fileElement) {
+        //     fileElement.remove();
+        //   }
+        // }
+        //Remove the file from state
+        // setUploadedFiles((prevFiles) => prevFiles.filter(file => file.id !==fileId));
+        //Dispatch an action to remove the file from redux store
+        // dispatch(removeFile(fileId));
+      }
 
       const fileButton = document.createElement('button')
       fileButton.innerHTML = '📁'
@@ -262,9 +317,9 @@ const CompleteRegistration: React.FC = () => {
           toolbarContainer.appendChild(fileButton)
         }
 
-        // if (!toolbarContainer.querySelector('.ql-file-input')) {
-        //   toolbarContainer.appendChild(fileInput)
-        // }
+        if (!toolbarContainer.querySelector('.ql-file-input')) {
+          toolbarContainer.appendChild(fileInput)
+        }
       }
 
       if (quill.root.parentNode) {
@@ -281,17 +336,68 @@ const CompleteRegistration: React.FC = () => {
     }
   }, [])
 
-  const toggleShowInstructions = (): void => {
-    if (content.trim() === '') {
-      setContent('<p></p>') // Set the initial content here
-    }
-    setShowInstructions(!showInstructions)
-    setRotate(!rotate)
+  // Function to generate a summary (this is a placeholder function)
+  const generateSummary = (text: string): string => {
+    const sentences = text.split('. ').slice(0, 3) // Get the first 3 sentences
+    return sentences.join('. ') + (sentences.length > 3 ? '...' : '')
   }
 
-  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFirstName(e.target.value)
+  // Function to handle summarizing the editor content
+  const handleSummarize = () => {
+    if (editorRef.current) {
+      const quill = editorRef.current.getEditor() // Access the Quill instance
+      const editorText = quill.getText().trim() // Get plain text from the editor
+
+      if (editorText) {
+        const summaryText = generateSummary(editorText)
+        setSummary(summaryText)
+      }
+    }
   }
+
+  const toggleShowSummary = (): void => {
+    handleSummarize()
+    setShowSummary(!showSummary)
+    setRotateSummary(!rotateSummary)
+  }
+
+  const toggleShowInstructions = (): void => {
+    setShowInstructions(!showInstructions)
+    setRotateInstructions(!rotateInstructions)
+  }
+
+  const toggleShowMyDetails = (): void => {
+    setMyDetails((prevDetails) => {
+      const upDatedDetails = [...prevDetails]
+
+      if (firstName) {
+        if (!upDatedDetails.includes(firstName)) {
+          upDatedDetails.push(firstName)
+        }
+      }
+
+      if (lastName) {
+        if (!upDatedDetails.includes(lastName)) {
+          upDatedDetails.push(lastName)
+        }
+      }
+
+      return upDatedDetails
+    })
+
+    setShowMyDetails(!showMyDetails)
+    setRotateMyDetails(!rotateMyDetails)
+  }
+
+  // const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   setContent(e.target.value)
+  // }
+
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFirstName = e.target.value
+    setFirstName(newFirstName)
+  }
+
   const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLastName(e.target.value)
   }
@@ -383,6 +489,11 @@ const CompleteRegistration: React.FC = () => {
       console.error('Error updating data:', error)
     }
   }
+  //Set summary as it changes
+  useEffect(() => {
+    content.length < 30 ? setSummary(content) : content
+    console.log(content)
+  }, [content])
 
   return (
     <div className="registration-container bg-gradient-to-r to-primary from-secondary-container h-full">
@@ -427,131 +538,132 @@ const CompleteRegistration: React.FC = () => {
                 onChange={setContent}
               />
             </div>
-            <div className="flex flex-col items-start justify-center gap-[15px] mt-[35px]">
-              <label
-                htmlFor="first-name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                First Name
-              </label>
-              <input
-                type="text"
-                id="first-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
-                htmlFor="last-name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="last-name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
-                htmlFor="date-of-birth"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                id="date-of-birth"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
-                htmlFor="phone-number"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phone-number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
-                htmlFor="paper-type"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Paper Type
-              </label>
-              <Select
-                inputId="paper-type"
-                options={paperOptions}
-                value={selectedPaperType}
-                onChange={setSelectedPaperType}
-                styles={customStyles}
-                className="w-[270px]"
-              />
-              <label
-                htmlFor="pages"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Number of Pages
-              </label>
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={handlePageDecrement}
-                  className="shadow-md bg-on-primary mr-[15px] p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
+            <div className="flex flex-row justify-between">
+              <div className="flex flex-col items-start justify-center gap-[15px] mt-[35px]">
+                <label
+                  htmlFor="first-name"
+                  className="block text-sm font-medium text-gray-700"
                 >
-                  <Icon path={mdiMinus} size={1} />
-                </button>
-                <span className="mx-2" id="pages">
-                  {numberOfPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePageIncrement}
-                  className="shadow-md bg-on-primary ml-[15px] p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="first-name"
+                  value={firstName}
+                  onChange={handleFirstNameChange}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                <label
+                  htmlFor="last-name"
+                  className="block text-sm font-medium text-gray-700"
                 >
-                  <Icon path={mdiPlus} size={1} />
-                </button>
-              </div>
-              <label
-                htmlFor="due-date"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Due Date
-              </label>
-              <input
-                type="date"
-                id="due-date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
-              />
-              <label
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                <label
+                  htmlFor="date-of-birth"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  id="date-of-birth"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                <label
+                  htmlFor="phone-number"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone-number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                <label
+                  htmlFor="paper-type"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Paper Type
+                </label>
+                <Select
+                  inputId="paper-type"
+                  options={paperOptions}
+                  value={selectedPaperType}
+                  onChange={setSelectedPaperType}
+                  styles={customStyles}
+                  className="w-[270px]"
+                />
+                <label
+                  htmlFor="pages"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Number of Pages
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={handlePageDecrement}
+                    className="shadow-md bg-on-primary mr-[15px] p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
+                  >
+                    <Icon path={mdiMinus} size={1} />
+                  </button>
+                  <span className="mx-2" id="pages">
+                    {numberOfPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handlePageIncrement}
+                    className="shadow-md bg-on-primary ml-[15px] p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
+                  >
+                    <Icon path={mdiPlus} size={1} />
+                  </button>
+                </div>
+                <label
+                  htmlFor="due-date"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  id="due-date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                />
+                {/* <label
                 htmlFor="file-upload"
                 className="block text-sm font-medium text-gray-700"
               >
                 Upload Files
               </label>
-              <FileUpload onUpload={handleFileUpload} />
+              <FileUpload onUpload={handleFileUpload} editorRef={editorRef}/>
               <FileList
                 propFiles={uploadedFiles}
                 onRemove={handleRemoveFile}
@@ -563,37 +675,81 @@ const CompleteRegistration: React.FC = () => {
                     <FilePreview key={fileValue.id} fileValue={fileValue} />
                   ))}
                 </div>
-              )}
-              <button
-                type="submit"
-                className="mt-4 inline-flex items-end px-7 py-2 border-transparent text-sm rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-[35px] border-2 font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container"
-              >
-                Submit
-              </button>
+              )} */}
+                <button
+                  type="submit"
+                  className="mt-4 inline-flex items-end px-7 py-2 border-transparent text-sm rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-[35px] border-2 font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container"
+                >
+                  Submit
+                </button>
+              </div>
+              <div className="flex flex-col items-start gap-[15px] mt-[35px]">
+                <label
+                  htmlFor="file-upload"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Upload Files
+                </label>
+                <FileUpload onUpload={handleFileUpload} editorRef={editorRef} />
+                <div className="text-sm flex flex-row">
+                  <FileList
+                    propFiles={uploadedFiles}
+                    onRemove={handleRemoveFile}
+                    onClearFiles={handleClearFiles}
+                  />
+                </div>
+                {/* {uploadedFiles.length > 0 && (
+                <div className="file-previews mt-4">
+                  {uploadedFiles.map((fileValue) => (
+                    <FilePreview key={fileValue.id} fileValue={fileValue} />
+                  ))}
+                </div>
+              )} */}
+              </div>
             </div>
           </form>
         </div>
         <div className="shadow-xl bg-on-primary flex flex-col w-[350px]">
-          <div className="flex items-center justify-between px-[30px] gap-[35px] py-[15px] border-b-[2px] border-gray-300">
+          <div
+            className="flex items-center justify-between px-[30px] gap-[35px] py-[15px] border-b-[2px] border-gray-300 cursor-pointer"
+            onClick={toggleShowSummary}
+          >
             <h3 className="text-xs">ORDER SUMMARY</h3>
-            <span>
-              <FaChevronUp />
-            </span>
+            <motion.div animate={{ rotate: rotateSummary ? 180 : 0 }}>
+              <span className={`${showSummary && ''}`}>
+                <FaChevronUp className="text-md" />
+              </span>
+            </motion.div>
           </div>
+          {showSummary && summary.length > 0 && (
+            <motion.div
+              className="p-[20px] text-xs bg-tertiary-container text-on-primary-container"
+              initial="collapsed"
+              animate="open"
+              exit="collapsed"
+              variants={{
+                open: { opacity: 1 },
+                collapsed: { opacity: 0 },
+              }}
+              transition={{ duration: 0.5, ease: 'easeIn' }}
+            >
+              <p className="">{summary}</p>
+            </motion.div>
+          )}
           <div
             className="flex items-center justify-between px-[30px] gap-[20px] py-[15px] border-b-[2px] border-gray-300 hover:cursor-pointer"
             onClick={toggleShowInstructions}
           >
             <h3 className="text-xs text-gray-600">Instructions and Files</h3>
-            <motion.div animate={{ rotate: rotate ? 180 : 0 }}>
+            <motion.div animate={{ rotate: rotateInstructions ? 180 : 0 }}>
               <span className={`${showInstructions && ''}`}>
                 <FaChevronUp className="text-sm" />
               </span>
             </motion.div>
           </div>
-          {showInstructions && instructions.length > 0 && (
+          {showInstructions && uploadedFiles.length > 0 && (
             <motion.div
-              className="p-[20px] text-xs"
+              className="p-[20px] text-xs bg-tertiary-container text-on-primary-container"
               initial="collapsed"
               animate="open"
               exit="collapsed"
@@ -603,33 +759,33 @@ const CompleteRegistration: React.FC = () => {
               }}
               transition={{ duration: 0.5, ease: 'easeIn' }}
             >
-              {instructions.map((instruction, index) => (
-                <div key={index}>
-                  <div className="flex items-start justify-normal gap-[10px]">
-                    <span>
-                      <FaRegCircle className="text-sm" />
-                    </span>
-                    <div>{instructions}</div>
-                  </div>
-                </div>
-              ))}
+              {/* {<div className="file-previews mt-4">
+                  {uploadedFiles.map((fileValue) => (
+                    <FilePreview key={fileValue.id} fileValue={fileValue} />
+                  ))}
+                </div>} */}
+              <FileList
+                propFiles={uploadedFiles}
+                onRemove={handleRemoveFile}
+                onClearFiles={handleClearFiles}
+              />
             </motion.div>
           )}
 
           <div
             className="flex items-center justify-between px-[30px] gap-[20px] py-[15px] border-b-[2px] border-gray-300 hover:cursor-pointer"
-            onClick={toggleShowInstructions}
+            onClick={toggleShowMyDetails}
           >
             <h3 className="text-xs text-gray-600">My details</h3>
-            <motion.div animate={{ rotate: rotate ? 180 : 0 }}>
-              <span className={`${showInstructions && ''}`}>
+            <motion.div animate={{ rotate: rotateMyDetails ? 180 : 0 }}>
+              <span className={`${showMyDetails && ''}`}>
                 <FaChevronUp className="text-sm" />
               </span>
             </motion.div>
           </div>
-          {showInstructions && instructions.length > 0 && (
+          {showMyDetails && myDetails.length > 0 && (
             <motion.div
-              className="p-[20px] text-xs"
+              className="p-[20px] text-xs bg-tertiary-container text-on-primary-container"
               initial="collapsed"
               animate="open"
               exit="collapsed"
@@ -639,13 +795,13 @@ const CompleteRegistration: React.FC = () => {
               }}
               transition={{ duration: 0.5, ease: 'easeIn' }}
             >
-              {instructions.map((instruction, index) => (
+              {myDetails.map((detail, index) => (
                 <div key={index}>
                   <div className="flex items-start justify-normal gap-[10px]">
                     <span>
                       <FaRegCircle className="text-sm" />
                     </span>
-                    <div>{instructions}</div>
+                    <div>{detail}</div>
                   </div>
                 </div>
               ))}

@@ -49,20 +49,20 @@ const FilePreview: React.FC<{ fileValue: FileValue }> = ({ fileValue }) => {
 
     case 'application':
       if (file.type.includes('pdf')) {
-        return <FaFilePdf size={100} />
+        return <FaFilePdf size={35} />
       }
-      return <FaFileAlt size={100} />
+      return <FaFileAlt size={35} />
 
     case 'video':
       return objectUrl ? (
-        <video controls width={100} height={100} src={objectUrl} />
+        <video controls width={35} height={35} src={objectUrl} />
       ) : null
 
     case 'audio':
       return objectUrl ? <audio controls src={objectUrl} /> : null
 
     default:
-      return <FaFile size={100} />
+      return <FaFile size={35} />
   }
 }
 

@@ -5,15 +5,17 @@ import { url } from 'inspector'
 
 interface FileUploadProps {
   onUpload: (files: File[]) => void
+  editorRef: React.RefObject<any>
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onUpload, editorRef }) => {
   const dispatch = useDispatch()
 
   const handleFileChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (event.target.files) {
-        onUpload(Array.from(event.target.files))
+        const filesArray = Array.from(event.target.files)
+        onUpload(filesArray)
       }
       const files = event.target.files
       if (files) {
@@ -27,10 +29,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             size: file.size,
           }
           dispatch(addFile(fileData))
+
+          if (editorRef.current) {
+            const quill = editorRef.current.getEditor()
+            const cursorPosition = quill.getSelection()?.index || 0
+            const fileLink = `<a href="${fileData.url}" download="${fileData.name}"> 📁 ${fileData.name}</a>`
+            quill.clipboard.dangerouslyPasteHTML(cursorPosition, fileLink)
+          }
         })
       }
     },
-    [dispatch],
+    [dispatch, editorRef, onUpload],
   )
 
   return (
