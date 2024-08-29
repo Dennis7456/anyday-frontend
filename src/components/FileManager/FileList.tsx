@@ -7,9 +7,14 @@ import { FileValue } from 'src/types'
 interface FileListProps {
   propFiles: FileValue[]
   onRemove: (id: number) => void
+  onClearFiles: () => void
 }
 
-const FileList: React.FC<FileListProps> = ({ propFiles, onRemove }) => {
+const FileList: React.FC<FileListProps> = ({
+  propFiles,
+  onRemove,
+  onClearFiles,
+}) => {
   const dispatch = useDispatch()
   const files = useSelector((state: RootState) => state.uploads.files)
 
@@ -18,13 +23,12 @@ const FileList: React.FC<FileListProps> = ({ propFiles, onRemove }) => {
   }
 
   const handleClear = () => {
-    console.log('Clear button clicked')
     dispatch(clearFiles())
   }
 
   return (
     <div>
-      <button onClick={handleClear}>Clear All Files</button>
+      <button onClick={() => onClearFiles()}>Clear All Files</button>
       <ul>
         {propFiles.map((file) => (
           <li key={file.id}>

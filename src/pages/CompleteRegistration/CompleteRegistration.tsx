@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, UseDispatch } from 'react-redux'
-import { removeFile } from 'src/slices/uploadSlice'
+import { clearFiles, removeFile } from 'src/slices/uploadSlice'
 import Select, { StylesConfig } from 'react-select'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -344,6 +344,12 @@ const CompleteRegistration: React.FC = () => {
     dispatch(removeFile(id))
   }
 
+  const handleClearFiles = () => {
+    console.log('clicked!!')
+    setUploadedFiles([])
+    dispatch(clearFiles())
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     try {
@@ -546,7 +552,11 @@ const CompleteRegistration: React.FC = () => {
                 Upload Files
               </label>
               <FileUpload onUpload={handleFileUpload} />
-              <FileList propFiles={uploadedFiles} onRemove={handleRemoveFile} />
+              <FileList
+                propFiles={uploadedFiles}
+                onRemove={handleRemoveFile}
+                onClearFiles={handleClearFiles}
+              />
               {uploadedFiles.length > 0 && (
                 <div className="file-previews mt-4">
                   {uploadedFiles.map((fileValue) => (
