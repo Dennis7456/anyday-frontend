@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useMutation, gql, ApolloError } from '@apollo/client'
 import { useDispatch, UseDispatch } from 'react-redux'
 import { addFile, clearFiles, removeFile } from 'src/slices/uploadSlice'
 import Select, { StylesConfig } from 'react-select'
@@ -7,6 +8,8 @@ import 'react-quill/dist/quill.snow.css'
 import Icon from '@mdi/react'
 import { FaChevronUp, FaRegCircle } from 'react-icons/fa'
 import { mdiPlus, mdiMinus } from '@mdi/js'
+import { PhoneInput, CountryIso2 } from 'react-international-phone'
+import { PhoneNumberUtil } from 'google-libphonenumber'
 import axios from 'axios'
 import { getCookie } from 'src/utils/cookie'
 import './CompleteRegistration.css'
@@ -15,28 +18,92 @@ import { EmbedBlot } from 'parchment'
 import FileUpload from 'src/components/FileManager/FileUpload'
 import FileList from 'src/components/FileManager/FileList'
 import FilePreview from 'src/components/FileManager/FilePreview'
+import InputMask from 'react-input-mask'
 import Quill from 'quill'
 import '../../components/FileManager/Quill/FileBlot'
 import { FileValue } from 'src/types'
+import 'react-international-phone/style.css'
+import { mdiCloseCircle, mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js'
 
 const BlockEmbed = Quill.import('blots/block/embed') as typeof EmbedBlot
+
+interface RedisData {
+  email: string
+  paperType: string
+  pages: number
+  dueDate: string
+}
 
 interface PaperOption {
   value: string
   label: string
 }
 
-interface UserData {
+interface StudentData {
   firstName: string
   lastName: string
   email: string
   dateOfBirth: string
   phoneNumber: string
+  password: string
+}
+
+interface OrderData {
   paperType: string
   pages: number
   dueDate: string
   instructions: string
 }
+
+interface ParsedCountry {
+  name: string
+  iso2: CountryIso2
+  dialCode: string
+  // format: FormatConfig | string | undefined;
+  format: any
+  priority: number | undefined
+  areaCodes: string[] | undefined
+}
+
+// Mutation to create a student
+const CREATE_STUDENT_MUTATION = gql`
+  mutation CreateStudent($input: CreateStudentInput!) {
+    createStudent(input: $input) {
+      id
+      firstName
+      lastName
+      email
+      dateOfBirth
+      phoneNumber
+      userName
+      role
+    }
+  }
+`
+
+// Mutation to create an order
+const CREATE_ORDER_MUTATION = gql`
+  mutation CreateOrder($input: CreateOrderInput!) {
+    createOrder(input: $input) {
+      studentId
+      instructions
+      paperType
+      numberOfPages
+      dueDate
+      uploadedFiles
+    }
+  }
+`
+
+// Mutation to attach files to an order
+const ATTACH_FILES = gql`
+  mutation AttachFiles($input: AttachFilesInput!) {
+    attachFiles(input: $input) {
+      id
+      documentPath
+    }
+  }
+`
 
 class FileBlot extends BlockEmbed {
   static blotName = 'file'
@@ -59,18 +126,27 @@ class FileBlot extends BlockEmbed {
 }
 
 Quill.register(FileBlot)
-
+const phoneUtil = PhoneNumberUtil.getInstance()
 const CompleteRegistration: React.FC = () => {
-  const [userData, setUserData] = useState<UserData | null>(null)
+  // const [studentData, setStudentData] = useState<StudentData | null>(null);
+  // const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [redisData, setRedisData] = useState<RedisData | null>(null)
   const [selectedPaperType, setSelectedPaperType] =
     useState<PaperOption | null>(null)
   const [numberOfPages, setNumberOfPages] = useState<number>(1)
   const [dueDate, setDueDate] = useState<string>('')
   const [email, setEmail] = useState<string>('')
+  const [isEmailValid, setIsEmailValid] = useState(true)
   const [firstName, setFirstName] = useState<string>('')
   const [lastName, setLastName] = useState<string>('')
   const [dateOfBirth, setDateOfBirth] = useState<string>('')
   const [phoneNumber, setPhoneNumber] = useState<string>('')
+  const [isPhoneNumberValid, setIsPhoneNumberValid] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const [token, setToken] = useState<string | null>(null)
   const [content, setContent] = useState<string>('')
   const [summary, setSummary] = useState<string>('')
@@ -168,6 +244,106 @@ const CompleteRegistration: React.FC = () => {
     }),
   }
 
+  const validateContent = () => {
+    const plainText = content.replace(/<[^>]*>/g, '').trim() // Strip HTML tags
+    if (plainText.length === 0) {
+      return false
+    }
+    return true
+  }
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    try {
+      return phoneUtil.isValidNumber(phoneUtil.parseAndKeepRawInput(phone))
+    } catch (error) {
+      return false
+      console.log(error)
+    }
+  }
+
+  const validatePassword = (password: string): string => {
+    const minLength = 8
+    const hasNumber = /\d/
+    const hasSpecialChar = /[!@#$%^&*]/
+    const hasLetter = /[a-zA-Z]/
+
+    if (password.length < minLength) {
+      return 'Password must be at least 8 characters long'
+    }
+    if (!hasNumber.test(password)) {
+      return 'Password must contain at least one number'
+    }
+    if (!hasSpecialChar.test(password)) {
+      return 'Password must contain at least one special character'
+    }
+    if (!hasLetter.test(password)) {
+      return 'Password must contain at least one letter'
+    }
+    return ''
+  }
+
+  // const is = validatePhoneNumber(phoneNumber);
+
+  const handleShowPassword = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    if (showPassword) {
+      setShowPassword(false)
+    } else {
+      setShowPassword(true)
+    }
+  }
+
+  // const [createStudent, { data: studentData, loading: studentLoading, error: studentError }] = useMutation(CREATE_STUDENT_MUTATION, {
+  //   onCompleted: (data) => {
+  //     // Handle successful student creation
+  //   const { createStudent } = data;
+  //   console.log('Student created', createStudent);
+  //   },
+  //   onError: (error) => {
+  //     // Handle student creation error
+  //   console.error('Student creation error:', error.message);
+  //   }
+  // })
+  const [
+    createStudent,
+    { data: studentData, loading: studentLoading, error: studentError },
+  ] = useMutation(CREATE_STUDENT_MUTATION)
+
+  // const [createOrder, { data: CREATE_ORDER_MUTATION, loading: oderLoading, error: orderError }] = useMutation(CREATE_ORDER_MUTATION, {
+  //   onCompleted: (data) => {
+  //     // Handle successful order creation
+  //   const { createOrder } = data;
+  //   console.log('Order created', createOrder);
+  //   },
+  //   onError: (error) => {
+  //     // Handle order creation error
+  //   console.error('Order creation error:', error.message);
+  //   }
+  // })
+
+  const [
+    createOrder,
+    { data: orderData, loading: orderLoading, error: orderError },
+  ] = useMutation(CREATE_ORDER_MUTATION)
+
+  const [
+    attachFiles,
+    { data: attachFileData, loading: fileLoading, error: attachFileError },
+  ] = useMutation(ATTACH_FILES, {
+    onCompleted: (data) => {
+      const { attachFiles } = data
+      console.log('File attached successfully', attachFiles)
+    },
+    onError: (error) => {
+      console.log('File attachement error', error.message)
+    },
+  })
+
   // Fetch temporary data from redis through backend and update the user data
   useEffect(() => {
     let isMounted = true
@@ -183,7 +359,7 @@ const CompleteRegistration: React.FC = () => {
         setToken(tokenFromCookie)
 
         const url = `${baseUrl}/api/redis/user-data`
-        const response = await axios.post<UserData>(url, null, {
+        const response = await axios.post<RedisData>(url, null, {
           headers: {
             Authorization: `Bearer ${tokenFromCookie}`,
             'Content-Type': 'application/json',
@@ -191,7 +367,7 @@ const CompleteRegistration: React.FC = () => {
         })
 
         if (isMounted) {
-          setUserData(response.data)
+          setRedisData(response.data)
           setEmail(response.data.email)
           setNumberOfPages(response.data.pages)
           setDueDate(response.data.dueDate)
@@ -389,9 +565,9 @@ const CompleteRegistration: React.FC = () => {
     setRotateMyDetails(!rotateMyDetails)
   }
 
-  // const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   setContent(e.target.value)
-  // }
+  const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setContent(e.target.value)
+  }
 
   const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFirstName = e.target.value
@@ -403,15 +579,22 @@ const CompleteRegistration: React.FC = () => {
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value)
+    const newEmail = e.target.value
+    setEmail(newEmail)
+    setIsEmailValid(validateEmail(newEmail))
+    // console.log(email)
   }
 
   const handleDateOfBirthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDateOfBirth(e.target.value)
   }
 
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhoneNumber(e.target.value)
+  const handlePhoneNumberChange = (
+    phoneNumber: string,
+    meta: { country: ParsedCountry; inputValue: string },
+  ) => {
+    setPhoneNumber(phoneNumber)
+    setIsPhoneNumberValid(validatePhoneNumber(phoneNumber))
   }
 
   const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,6 +612,25 @@ const CompleteRegistration: React.FC = () => {
   const handlePageDecrement = () => {
     if (numberOfPages > 1) {
       setNumberOfPages((prev) => prev - 1)
+    }
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setPassword(newPassword)
+    setPasswordError(validatePassword(newPassword))
+  }
+
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const newConfirmPassword = e.target.value
+    setConfirmPassword(newConfirmPassword)
+
+    if (password != newConfirmPassword) {
+      setConfirmPasswordError('Passwords do not match')
+    } else {
+      setConfirmPasswordError('')
     }
   }
 
@@ -456,44 +658,113 @@ const CompleteRegistration: React.FC = () => {
     dispatch(clearFiles())
   }
 
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
+  //   try {
+  //     const updatedUserData: UserData = {
+  //       firstName,
+  //       lastName,
+  //       email,
+  //       dateOfBirth,
+  //       phoneNumber,
+  //       paperType: selectedPaperType?.value || '',
+  //       pages: numberOfPages,
+  //       dueDate,
+  //       instructions: content,
+  //     }
+
+  //     if (!token) {
+  //       console.error('Token is missing')
+  //       return
+  //     }
+
+  //     const url = `${baseUrl}/api/redis/user-data/update`
+  //     await axios.post(url, updatedUserData, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     })
+
+  //     console.log('Data updated successfully')
+  //   } catch (error) {
+  //     console.error('Error updating data:', error)
+  //   }
+  // }
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (!validateContent()) {
+      alert('Order instructions cannot be empty!')
+    }
+
     try {
-      const updatedUserData: UserData = {
-        firstName,
-        lastName,
-        email,
-        dateOfBirth,
-        phoneNumber,
-        paperType: selectedPaperType?.value || '',
-        pages: numberOfPages,
-        dueDate,
-        instructions: content,
-      }
+      // Step 1: Create the student
 
-      if (!token) {
-        console.error('Token is missing')
-        return
-      }
+      // const { data } = await createStudent({
+      //   variables: {
+      //     input: {
+      //       firstName: firstName,
+      //       lastName: lastName,
+      //       email: email,
+      //       dateOfBirth: dateOfBirth,
+      //       phoneNumber: phoneNumber,
+      //       password: password
+      //     }
+      //   }
+      // })
 
-      const url = `${baseUrl}/api/redis/user-data/update`
-      await axios.post(url, updatedUserData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      // const studentResponse = { data }
+
+      // console.log(studentResponse);
+      // Retrieve the created student's ID
+      // const studentId = studentResponse.data.createStudent.id;
+      const studentId = 2
+
+      // console.log(studentId, content, selectedPaperType, numberOfPages, dueDate, uploadedFiles);
+      console.log(uploadedFiles)
+
+      // Step 2: Create the order associated with the student
+      const orderResponse = await createOrder({
+        variables: {
+          input: {
+            studentId, // Associate the order with the created student
+            content,
+            selectedPaperType,
+            numberOfPages,
+            dueDate,
+            uploadedFiles,
+          },
         },
       })
 
-      console.log('Data updated successfully')
+      // console.log(orderResponse);
+
+      // Retrieve the created order's ID
+      // const orderId = orderResponse.data.createOrder.id;
+
+      // Step 3: Attach files to the order
+      // if (files && files.length > 0) {
+      //   const fileUploadResponse = await attachFiles({
+      //     variables: {
+      //       input: {
+      //         orderId, // Associate the files with the created order
+      //         files, // The files to be uploaded
+      //       },
+      //     },
+      //   });
+
+      // }
     } catch (error) {
-      console.error('Error updating data:', error)
+      if (error instanceof ApolloError) {
+        console.error('ApolloError:', error.message)
+        console.error('GraphQLErrors:', error.graphQLErrors)
+        console.error('NetworkError:', error.networkError)
+      } else {
+        console.error('Unexpected Error:', error)
+      }
     }
   }
-  //Set summary as it changes
-  useEffect(() => {
-    content.length < 30 ? setSummary(content) : content
-    console.log(content)
-  }, [content])
 
   return (
     <div className="registration-container bg-gradient-to-r to-primary from-secondary-container h-full">
@@ -551,6 +822,7 @@ const CompleteRegistration: React.FC = () => {
                   id="first-name"
                   value={firstName}
                   onChange={handleFirstNameChange}
+                  required
                   className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
                 />
                 <label
@@ -564,6 +836,7 @@ const CompleteRegistration: React.FC = () => {
                   id="last-name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  required
                   className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
                 />
                 <label
@@ -576,9 +849,17 @@ const CompleteRegistration: React.FC = () => {
                   type="email"
                   id="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                  required
+                  onChange={handleEmailChange}
+                  className={`shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary ${
+                    !isEmailValid ? 'border-error' : ''
+                  }`}
                 />
+                {!isEmailValid && (
+                  <p className="text-error">
+                    Please enter a valid email address.
+                  </p>
+                )}
                 <label
                   htmlFor="date-of-birth"
                   className="block text-sm font-medium text-gray-700"
@@ -590,6 +871,7 @@ const CompleteRegistration: React.FC = () => {
                   id="date-of-birth"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
+                  required
                   className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
                 />
                 <label
@@ -598,13 +880,19 @@ const CompleteRegistration: React.FC = () => {
                 >
                   Phone Number
                 </label>
-                <input
-                  type="tel"
-                  id="phone-number"
+                <PhoneInput
+                  defaultCountry="us"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                  onChange={handlePhoneNumberChange}
+                  // className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary phone-input"
+                  className="phone-input"
+                  // style={{ width:'full', color:'red' }}
                 />
+                {!isPhoneNumberValid && (
+                  <p className="text-error">
+                    Please enter a valid phone number.
+                  </p>
+                )}
                 <label
                   htmlFor="paper-type"
                   className="block text-sm font-medium text-gray-700"
@@ -651,33 +939,79 @@ const CompleteRegistration: React.FC = () => {
                   Due Date
                 </label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   id="due-date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                  required
                   className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
                 />
-                {/* <label
-                htmlFor="file-upload"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Upload Files
-              </label>
-              <FileUpload onUpload={handleFileUpload} editorRef={editorRef}/>
-              <FileList
-                propFiles={uploadedFiles}
-                onRemove={handleRemoveFile}
-                onClearFiles={handleClearFiles}
-              />
-              {uploadedFiles.length > 0 && (
-                <div className="file-previews mt-4">
-                  {uploadedFiles.map((fileValue) => (
-                    <FilePreview key={fileValue.id} fileValue={fileValue} />
-                  ))}
-                </div>
-              )} */}
+                <label
+                  htmlFor="password"
+                  className="text-start block text-on-background text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <span className="flex justify-end items-center">
+                  <input
+                    className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    name="password"
+                    onChange={handlePasswordChange}
+                    value={password}
+                  />
+                  <button
+                    type="button"
+                    className="absolute mr-4 hover:text-info"
+                    onClick={handleShowPassword}
+                  >
+                    <Icon
+                      path={showPassword ? mdiEyeOutline : mdiEyeOffOutline}
+                      size={1}
+                    />
+                  </button>
+                </span>
+                {passwordError && <p className="text-error">{passwordError}</p>}
+                <label
+                  htmlFor="confirm-password"
+                  className="text-start block text-on-background text-sm font-medium text-gray-700"
+                >
+                  Confirm Password
+                </label>
+                <span className="flex justify-end items-center">
+                  <input
+                    className="required:border-error invalid:border-error shadow border-0 focus:border-1 rounded w-[270px] py-2 px-3 focus:outline-none focus:shadow-outline text-secondary"
+                    id="confirm-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    name="confirm-password"
+                    onChange={handleConfirmPasswordChange}
+                    value={confirmPassword}
+                  />
+                  <button
+                    type="button"
+                    className="absolute mr-4 hover:text-info"
+                    onClick={handleShowPassword}
+                  >
+                    <Icon
+                      path={showPassword ? mdiEyeOutline : mdiEyeOffOutline}
+                      size={1}
+                    />
+                  </button>
+                </span>
+                {confirmPasswordError && (
+                  <p className="text-error">{confirmPasswordError}</p>
+                )}
                 <button
                   type="submit"
+                  disabled={
+                    passwordError !== '' ||
+                    confirmPasswordError !== '' ||
+                    password === '' ||
+                    confirmPassword === ''
+                  }
                   className="mt-4 inline-flex items-end px-7 py-2 border-transparent text-sm rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-[35px] border-2 font-semibold text-black hover:bg-primary hover:text-on-primary active:bg-tertiary-container"
                 >
                   Submit
@@ -740,7 +1074,7 @@ const CompleteRegistration: React.FC = () => {
             className="flex items-center justify-between px-[30px] gap-[20px] py-[15px] border-b-[2px] border-gray-300 hover:cursor-pointer"
             onClick={toggleShowInstructions}
           >
-            <h3 className="text-xs text-gray-600">Instructions and Files</h3>
+            <h3 className="text-xs text-gray-600">Attachments and Files</h3>
             <motion.div animate={{ rotate: rotateInstructions ? 180 : 0 }}>
               <span className={`${showInstructions && ''}`}>
                 <FaChevronUp className="text-sm" />

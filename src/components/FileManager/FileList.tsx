@@ -29,12 +29,14 @@ const FileList: React.FC<FileListProps> = ({
 
   return (
     <div>
-      <button
-        onClick={() => onClearFiles()}
-        className="mb-[20px] border rounded-sm px-[10px] py-[5px] bg-on-primary"
-      >
-        Clear All Files
-      </button>
+      {propFiles.length > 0 && (
+        <button
+          onClick={() => onClearFiles()}
+          className="mb-[20px] border rounded-sm px-[10px] py-[5px] bg-on-primary"
+        >
+          Clear All Files
+        </button>
+      )}
       <ul>
         {propFiles.map((file) => (
           <li

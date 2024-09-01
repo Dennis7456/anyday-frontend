@@ -13,6 +13,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, editorRef }) => {
 
   const handleFileChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
+      event.preventDefault()
       if (event.target.files) {
         const filesArray = Array.from(event.target.files)
         onUpload(filesArray)

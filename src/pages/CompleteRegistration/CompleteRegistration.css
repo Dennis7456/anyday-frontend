@@ -28,3 +28,14 @@
   height: fit-content;
   width: 160px;
 }
+
+.phone-input {
+  --react-international-phone-height: 40px;
+  --react-international-phone-background-color: white;
+  --react-international-phone-text-color: #222;
+  --react-international-phone-font-size: 15px;
+  --react-international-phone-border-radius: 4px;
+  --react-international-phone-border-color: gainsboro;
+  --react-international-phone-disabled-background-color: whitesmoke;
+  --react-international-phone-disabled-text-color: #666;
+}
