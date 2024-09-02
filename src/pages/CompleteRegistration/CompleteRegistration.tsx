@@ -3,7 +3,7 @@ import { useMutation, gql, ApolloError } from '@apollo/client'
 import { useDispatch, UseDispatch } from 'react-redux'
 import { addFile, clearFiles, removeFile } from 'src/slices/uploadSlice'
 import Select, { StylesConfig } from 'react-select'
-import ReactQuill from 'react-quill'
+import ReactQuill, { contextType } from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import Icon from '@mdi/react'
 import { FaChevronUp, FaRegCircle } from 'react-icons/fa'
@@ -24,6 +24,7 @@ import '../../components/FileManager/Quill/FileBlot'
 import { FileValue } from 'src/types'
 import 'react-international-phone/style.css'
 import { mdiCloseCircle, mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js'
+import fs from 'fs'
 
 const BlockEmbed = Quill.import('blots/block/embed') as typeof EmbedBlot
 
@@ -65,6 +66,14 @@ interface ParsedCountry {
   areaCodes: string[] | undefined
 }
 
+interface FileData {
+  id: string
+  name: string
+  size: string
+  url: string
+  type: string
+}
+
 // Mutation to create a student
 const CREATE_STUDENT_MUTATION = gql`
   mutation CreateStudent($input: CreateStudentInput!) {
@@ -85,12 +94,22 @@ const CREATE_STUDENT_MUTATION = gql`
 const CREATE_ORDER_MUTATION = gql`
   mutation CreateOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
-      studentId
-      instructions
-      paperType
-      numberOfPages
-      dueDate
-      uploadedFiles
+      success
+      message
+      order {
+        studentId
+        instructions
+        paperType
+        numberOfPages
+        dueDate
+        uploadedFiles {
+          id
+          name
+          url
+          size
+          type
+        }
+      }
     }
   }
 `
@@ -161,6 +180,7 @@ const CompleteRegistration: React.FC = () => {
   const [showDestinations, setShowDestinations] = useState(false)
   const [instructions, setInstructions] = useState([])
   const [uploadedFiles, setUploadedFiles] = useState<FileValue[]>([])
+  const [fileData, setFileData] = useState<FileData[]>([])
 
   const editorRef = useRef<ReactQuill | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -658,103 +678,81 @@ const CompleteRegistration: React.FC = () => {
     dispatch(clearFiles())
   }
 
-  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault()
-  //   try {
-  //     const updatedUserData: UserData = {
-  //       firstName,
-  //       lastName,
-  //       email,
-  //       dateOfBirth,
-  //       phoneNumber,
-  //       paperType: selectedPaperType?.value || '',
-  //       pages: numberOfPages,
-  //       dueDate,
-  //       instructions: content,
-  //     }
-
-  //     if (!token) {
-  //       console.error('Token is missing')
-  //       return
-  //     }
-
-  //     const url = `${baseUrl}/api/redis/user-data/update`
-  //     await axios.post(url, updatedUserData, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         'Content-Type': 'application/json',
-  //       },
-  //     })
-
-  //     console.log('Data updated successfully')
-  //   } catch (error) {
-  //     console.error('Error updating data:', error)
-  //   }
-  // }
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!validateContent()) {
       alert('Order instructions cannot be empty!')
+      return
     }
 
     try {
       // Step 1: Create the student
-
-      // const { data } = await createStudent({
-      //   variables: {
-      //     input: {
-      //       firstName: firstName,
-      //       lastName: lastName,
-      //       email: email,
-      //       dateOfBirth: dateOfBirth,
-      //       phoneNumber: phoneNumber,
-      //       password: password
-      //     }
-      //   }
-      // })
-
-      // const studentResponse = { data }
-
-      // console.log(studentResponse);
-      // Retrieve the created student's ID
-      // const studentId = studentResponse.data.createStudent.id;
-      const studentId = 2
-
-      // console.log(studentId, content, selectedPaperType, numberOfPages, dueDate, uploadedFiles);
-      console.log(uploadedFiles)
-
-      // Step 2: Create the order associated with the student
-      const orderResponse = await createOrder({
+      const { data: studentData } = await createStudent({
         variables: {
           input: {
-            studentId, // Associate the order with the created student
-            content,
-            selectedPaperType,
-            numberOfPages,
-            dueDate,
-            uploadedFiles,
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            dateOfBirth: dateOfBirth,
+            phoneNumber: phoneNumber,
+            password: password,
           },
         },
       })
 
-      // console.log(orderResponse);
+      // Retrieve the created student's ID
+      const studentId = studentData.createStudent.id
 
-      // Retrieve the created order's ID
-      // const orderId = orderResponse.data.createOrder.id;
+      // Step 2: Upload files to google storage bucket
+      let fileData: FileData[] = []
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        const url = `${baseUrl}/api/upload/files`
 
-      // Step 3: Attach files to the order
-      // if (files && files.length > 0) {
-      //   const fileUploadResponse = await attachFiles({
-      //     variables: {
-      //       input: {
-      //         orderId, // Associate the files with the created order
-      //         files, // The files to be uploaded
-      //       },
-      //     },
-      //   });
+        // Upload files to google cloud storage bucket
+        try {
+          const response = await axios.post(url, uploadedFiles, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          })
 
-      // }
+          // Check the structure of response.data
+          console.log('File upload response:', response.data)
+
+          if (Array.isArray(response.data.uploadedFiles)) {
+            fileData = response.data.uploadedFiles.map((file: FileData) => ({
+              id: file.id,
+              name: file.name,
+              url: file.url,
+              size: file.size,
+              type: file.type,
+            }))
+          }
+
+          console.log('Files uploaded successfully:', fileData)
+        } catch (error) {
+          console.error('Error uploading files:', error)
+        }
+      }
+
+      console.log('File data:', fileData)
+
+      // Step 3: Create the order associated with the student
+      await createOrder({
+        variables: {
+          input: {
+            studentId,
+            instructions: content,
+            paperType: selectedPaperType?.value,
+            numberOfPages,
+            dueDate,
+            uploadedFiles: fileData,
+          },
+        },
+      })
+
+      console.log('Order created successfully!')
     } catch (error) {
       if (error instanceof ApolloError) {
         console.error('ApolloError:', error.message)
