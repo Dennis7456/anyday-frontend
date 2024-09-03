@@ -578,6 +578,24 @@ const CompleteRegistration: React.FC = () => {
         }
       }
 
+      if (email) {
+        if (!upDatedDetails.includes(email)) {
+          upDatedDetails.push(email)
+        }
+      }
+
+      if (dateOfBirth) {
+        if (!upDatedDetails.includes(dateOfBirth)) {
+          upDatedDetails.push(dateOfBirth)
+        }
+      }
+
+      if (phoneNumber) {
+        if (!upDatedDetails.includes(phoneNumber)) {
+          upDatedDetails.push(phoneNumber)
+        }
+      }
+
       return upDatedDetails
     })
 
@@ -731,6 +749,7 @@ const CompleteRegistration: React.FC = () => {
           }
 
           console.log('Files uploaded successfully:', fileData)
+          window.location.href = '/'
         } catch (error) {
           console.error('Error uploading files:', error)
         }
@@ -1015,7 +1034,7 @@ const CompleteRegistration: React.FC = () => {
                   Submit
                 </button>
               </div>
-              <div className="flex flex-col items-start gap-[15px] mt-[35px]">
+              <div className="flex flex-col items-start gap-[15px] mt-[35px] ml-[35px]">
                 <label
                   htmlFor="file-upload"
                   className="block text-sm font-medium text-gray-700"
