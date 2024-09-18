@@ -115,12 +115,13 @@ const App = () => {
           {/*<section className='px-6 py-8 bg-surface'>
         <NavigationBar /> 
       </section>*/}
-          {!hideComponent && <NavigationBar />}
+          {/* {!hideComponent && <NavigationBar />} */}
           <ToastContainer />
           <Routes>
             <Route element={<PrivateRoutes />}>
-              <Route path="/dashboard" element={<DashBoard />}></Route>
+              {/* <Route path="/dashboard" element={<DashBoard />}></Route> */}
             </Route>
+            <Route path="/dashboard" element={<DashBoard />}></Route>
             <Route
               path="/"
               element={
